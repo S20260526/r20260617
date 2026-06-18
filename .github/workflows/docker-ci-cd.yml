@@ -1,0 +1,43 @@
+name: cicd
+
+on:
+  push:
+    branches: [ "main" ]
+
+  pull_request:
+    branches: [ "main" ]
+
+  workflow_dispatch:
+    branches: [ "main" ]
+
+jobs:
+  localhost:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.20"
+      - name: fmt
+        run: test "$(gofmt -l ./app ./cmd ./domain ./infra | wc -l)" -eq "0"
+      - name: lint
+        run: go vet ./app ./cmd ./domain ./infra
+      - name: build
+        run: go build ./cmd
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          file: Dockerfile
+          push: true
+          tags: ghcr.io/s20260526/m20260618:latest
