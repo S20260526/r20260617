@@ -19,9 +19,9 @@ jobs:
         with:
           go-version: "1.20"
       - name: fmt
-        run: test "$(gofmt -l ./app ./cmd ./domain ./infra | wc -l)" -eq "0"
+        run: test "$(gofmt -l ./internal/app ./cmd ./internal/domain ./internal/infra | wc -l)" -eq "0"
       - name: lint
-        run: go vet ./app ./cmd ./domain ./infra
+        run: go vet ./internal/app ./cmd ./internal/domain ./internal/infra
       - name: build
         run: go build ./cmd
   docker:

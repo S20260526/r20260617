@@ -1,10 +1,8 @@
 FROM golang:alpine AS b
 WORKDIR /b
 
-COPY app/ /b/app/
+COPY internal/ /b/internal/
 COPY cmd/ /b/cmd/
-COPY domain/ /b/domain/
-COPY infra/ /b/infra/
 COPY go.work /b/
 
 RUN go mod download
