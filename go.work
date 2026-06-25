@@ -3,6 +3,7 @@ go 1.20
 use (
 	./internal/app
 	./cmd
+	./hcheck
 	./internal/domain
 	./internal/infra
 )
