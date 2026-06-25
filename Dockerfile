@@ -14,4 +14,5 @@ FROM scratch
 COPY --from=b /b/m20260618 /m20260618
 COPY --from=b /b/m20260618-hcheck /m20260618-hcheck
 ENTRYPOINT ["/m20260618"]
+HEALTHCHECK --timeout=5s --interval=10s CMD ["/m20260618-hcheck"]
 EXPOSE 8080
