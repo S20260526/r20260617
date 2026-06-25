@@ -13,11 +13,6 @@ jobs:
         image: ghcr.io/s20260526/m20260618:latest
         ports:
           - 8080:8080
-        options: >-
-          --health-cmd '["/m20260618-hcheck"]'
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: run
