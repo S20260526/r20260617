@@ -1,0 +1,19 @@
+name: intest
+
+on:
+  workflow_dispatch:
+    branches: [ "main" ]
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+
+    services:
+      server:
+        image: ghcr.io/s20260526/m20260618:latest
+        ports:
+          - 8080:8080
+
+    steps:
+      - name: run
+        run: test "$(wget -O - -q http://127.0.0.1:8080)" = 'Hello, World!'
