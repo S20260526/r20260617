@@ -22,6 +22,8 @@ jobs:
         run: test "$(gofmt -l ./internal/app ./cmd ./internal/domain ./internal/infra | wc -l)" -eq "0"
       - name: lint
         run: go vet ./internal/app ./cmd ./internal/domain ./internal/infra
+      - name: unittest
+        run: go test -v ./internal/app ./internal/domain ./internal/infra
       - name: build
         run: go build ./cmd
   docker:
