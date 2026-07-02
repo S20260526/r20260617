@@ -3,6 +3,7 @@ package infra
 import (
 	"domain"
 	"fmt"
+	"log/slog"
 	"net/http"
 )
 
@@ -16,6 +17,8 @@ type Handler struct {
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	slog.Info("request", "from", r.RemoteAddr, "to", r.Host, "URI", r.RequestURI)
+
 	w.Write([]byte(fmt.Sprintf("%s, %s!", h.uc.Hello(), h.uc.World())))
 }
 
