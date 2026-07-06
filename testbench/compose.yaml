@@ -42,6 +42,21 @@ services:
     logging:
       driver: none
 
+  p:
+    image: prom/prometheus:v3-busybox
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/etc/prometheus/console_libraries
+      - --storage.tsdb.retention.time=15d
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+
   g:
     image: grafana/grafana:latest
     container_name: grafana
@@ -55,10 +70,12 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana-loki.yaml:/etc/grafana/provisioning/datasources/loki.yaml
+      - ./grafana-prometheus.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
     logging:
       driver: none
 
 volumes:
   loki-data:
   fluent-bit-state:
+  prometheus_data:
   grafana-data:
