@@ -1,0 +1,64 @@
+name: testbench
+
+services:
+  a1:
+    image: ghcr.io/s20260526/m20260618:latest
+    ports:
+      - "8081:8080"
+
+  a2:
+    image: ghcr.io/s20260526/m20260618:latest
+    ports:
+      - "8082:8080"
+
+  l:
+    image: grafana/loki:3.7
+    container_name: loki
+    volumes:
+      - loki-data:/loki
+    restart: unless-stopped
+    logging:
+      driver: none
+
+  f:
+    image: ghcr.io/fluent/fluent-bit:4.2
+    container_name: fluent-bit
+    cap_add:
+      - CAP_FOWNER
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml:ro
+      - fluent-bit-state:/var/fluent-bit/state
+    depends_on:
+      - l
+    restart: unless-stopped
+    command:
+      - -c
+      - /fluent-bit/etc/fluent-bit.yaml
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: none
+
+  g:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "9060:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: nimda
+    depends_on:
+      - l
+    restart: unless-stopped
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-loki.yaml:/etc/grafana/provisioning/datasources/loki.yaml
+    logging:
+      driver: none
+
+volumes:
+  loki-data:
+  fluent-bit-state:
+  grafana-data:
