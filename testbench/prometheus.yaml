@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "prometheus"
+    metrics_path: "prometrics"
+    static_configs:
+      - targets: ["a1:8080", "a2:8080"]

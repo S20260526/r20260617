@@ -1,0 +1,43 @@
+service:
+  flush: 5s
+  log_level: info
+  daemon: off
+
+parsers:
+  - name: docker
+    format: json
+    time_key: time
+    time_format: '%Y-%m-%dT%H:%M:%S.%L %z'
+    time_keep: on
+    decode_field_as: json log
+
+pipeline:
+
+  inputs:
+    - name: tail
+      path: /var/lib/docker/containers/*/*-json.log
+      parser: docker
+      db: /var/fluent-bit/state/flb-docker.db
+      mem_buf_limit: 5MB
+      skip_long_lines: on
+      refresh_interval: 10
+
+  filters:
+    - name: lua
+      match: '*'
+      call: tweak
+      code: |
+        function tweak(tag, timestamp, record)
+            record["stream"] = nil
+            record["time"] = nil
+
+            return 1, timestamp, record
+        end
+
+  outputs:
+    - name: loki
+      match: '*'
+      host: loki
+      port: 3100
+      uri: /loki/api/v1/push
+      labels: app=m20260618
