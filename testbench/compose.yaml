@@ -3,13 +3,19 @@ name: testbench
 services:
   a1:
     image: ghcr.io/s20260526/m20260618:latest
-    ports:
-      - "8081:8080"
 
   a2:
     image: ghcr.io/s20260526/m20260618:latest
+
+  h:
+    image: haproxy:3.0
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     ports:
-      - "8082:8080"
+      - "8080:8080"
+    depends_on:
+      - a1
+      - a2
 
   l:
     image: grafana/loki:3.7
