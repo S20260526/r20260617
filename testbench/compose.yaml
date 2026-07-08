@@ -16,8 +16,6 @@ services:
     depends_on:
       - a1
       - a2
-    #logging:
-    #  driver: none
 
   l:
     image: grafana/loki:3.7
