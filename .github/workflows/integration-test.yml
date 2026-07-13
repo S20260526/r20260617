@@ -10,7 +10,7 @@ jobs:
 
     services:
       server:
-        image: ghcr.io/s20260526/m20260618:latest
+        image: ghcr.io/s20260526/m20260618-entry:latest
         ports:
           - 8080:8080
 

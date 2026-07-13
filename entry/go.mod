@@ -1,4 +1,4 @@
-module m20260618
+module m20260618-entry
 
 go 1.24
 

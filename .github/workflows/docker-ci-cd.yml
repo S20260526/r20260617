@@ -19,13 +19,13 @@ jobs:
         with:
           go-version: "1.24"
       - name: fmt
-        run: test "$(gofmt -l ./internal/app ./cmd ./hcheck ./internal/domain ./internal/infra | wc -l)" -eq "0"
+        run: test "$(gofmt -l ./internal/app ./entry ./hcheck ./internal/domain ./internal/infra | wc -l)" -eq "0"
       - name: lint
-        run: go vet ./internal/app ./cmd ./hcheck ./internal/domain ./internal/infra
+        run: go vet ./internal/app ./entry ./hcheck ./internal/domain ./internal/infra
       - name: unittest
         run: go test -v ./internal/app ./internal/domain ./internal/infra
       - name: build
-        run: go build ./cmd
+        run: go build ./entry
   docker:
     runs-on: ubuntu-latest
     permissions:
@@ -40,6 +40,6 @@ jobs:
       - uses: docker/setup-buildx-action@v4
       - uses: docker/build-push-action@v7
         with:
-          file: Dockerfile
+          file: entry/Dockerfile
           push: true
-          tags: ghcr.io/s20260526/m20260618:latest
+          tags: ghcr.io/s20260526/m20260618-entry:latest
