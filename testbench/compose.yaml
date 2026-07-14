@@ -1,16 +1,16 @@
 name: testbench
 
 services:
-  a1:
+  entry1:
     image: ghcr.io/s20260526/m20260618-entry:latest
 
-  a2:
+  entry2:
     image: ghcr.io/s20260526/m20260618-entry:latest
 
-  hl:
+  hello:
     image: ghcr.io/s20260526/m20260618-hello:latest
 
-  w:
+  world:
     image: ghcr.io/s20260526/m20260618-world:latest
 
   h:
@@ -20,8 +20,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - a1
-      - a2
+      - entry1
+      - entry2
 
   l:
     image: grafana/loki:3.7
