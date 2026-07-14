@@ -37,7 +37,7 @@ func main() {
 		TLSConfig: tc,
 	}
 
-	slog.Info("server", "state", "started")
+	slog.Info("world", "state", "started")
 
 	e = s.ListenAndServeTLS("", "")
 
