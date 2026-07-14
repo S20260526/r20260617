@@ -7,7 +7,9 @@
 Сборка на локальной машине:
 
 ```bash
-go build ./entry ./hello ./world
+go build ./entry
+go build ./hello
+go build ./world
 ```
 
 Сборка контейнеров dоcker:
@@ -19,3 +21,10 @@ docker build -t m20260618-world -f world/Dockerfile .
 ```
 
 Также в каталоге .github/workflows/ cодержитcя файл docker-ci-cd.yml, управляющий CI/CD GitHub. Выполняет сборку приложения и упаковку в контейнер docker.
+
+В каталоге testbench находится инфраструктура тестирования docker compose, для запуска выполнить:
+
+```bash
+cd testbench
+docker compose up
+```
