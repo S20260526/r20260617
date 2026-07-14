@@ -1,11 +1,17 @@
 name: testbench
 
 services:
-  a1:
-    image: ghcr.io/s20260526/m20260618:latest
+  entry1:
+    image: ghcr.io/s20260526/m20260618-entry:latest
 
-  a2:
-    image: ghcr.io/s20260526/m20260618:latest
+  entry2:
+    image: ghcr.io/s20260526/m20260618-entry:latest
+
+  hello:
+    image: ghcr.io/s20260526/m20260618-hello:latest
+
+  world:
+    image: ghcr.io/s20260526/m20260618-world:latest
 
   h:
     image: haproxy:3.0
@@ -14,8 +20,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - a1
-      - a2
+      - entry1
+      - entry2
 
   l:
     image: grafana/loki:3.7

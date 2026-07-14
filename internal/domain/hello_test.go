@@ -12,4 +12,6 @@ func TestHello(t *testing.T) {
 	if a != e {
 		t.Fatalf("got \"%s\", \"%s\" expected", a, e)
 	}
+
+	var _ Term = h
 }

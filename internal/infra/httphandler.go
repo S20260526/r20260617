@@ -1,19 +1,12 @@
 package infra
 
 import (
-	"context"
 	"domain"
-	"fmt"
-	"log/slog"
 	"net/http"
 )
 
 type UseCase interface {
-	CreateContext(ctx context.Context) context.Context
-	GetTraceId(ctx context.Context) string
-
-	Hello(ctx context.Context) *domain.Hello
-	World(ctx context.Context) *domain.World
+	Get() domain.Term
 }
 
 type Handler struct {
@@ -21,11 +14,7 @@ type Handler struct {
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := h.uc.CreateContext(r.Context())
-
-	slog.Info("request", "traceid", h.uc.GetTraceId(ctx), "from", r.RemoteAddr, "to", r.Host, "URI", r.RequestURI)
-
-	w.Write([]byte(fmt.Sprintf("%s, %s!", h.uc.Hello(ctx), h.uc.World(ctx))))
+	w.Write([]byte(h.uc.Get().String()))
 }
 
 func NewHandler(uc UseCase) Handler {

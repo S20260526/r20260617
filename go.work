@@ -1,9 +1,11 @@
 go 1.24
 
 use (
-	./internal/app
-	./cmd
+	./entry
 	./hcheck
+	./hello
+	./world
+	./internal/app
 	./internal/domain
 	./internal/infra
 )
