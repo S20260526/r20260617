@@ -13,37 +13,20 @@ import (
 )
 
 type Handler struct {
-	pc prometheus.Counter
-	ih infra.Handler
-	ph http.Handler
+	rc, hc prometheus.Counter
+	ih     infra.Handler
+	ph     http.Handler
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.RequestURI == "/hcheck" {
-		h.pc.Inc()
-		return
+		h.hc.Inc()
 	} else if r.RequestURI == "/prometrics" {
 		h.ph.ServeHTTP(w, r)
 	} else {
+		h.rc.Inc()
 		h.ih.ServeHTTP(w, r)
 	}
-}
-
-type Metrics struct {
-	registry *prometheus.Registry
-}
-
-func (m Metrics) NewCounter(name, human_readable string) app.Counter {
-	c := prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: name,
-			Help: human_readable,
-		},
-	)
-
-	m.registry.MustRegister(c)
-
-	return c
 }
 
 func main() {
@@ -56,22 +39,25 @@ func main() {
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 	)
 
-	m := Metrics{
-		registry: pr,
-	}
-
 	h := Handler{
-		pc: prometheus.NewCounter(
+		rc: prometheus.NewCounter(
+			prometheus.CounterOpts{
+				Name: "request_cnt",
+				Help: "Hello, world! request counter",
+			},
+		),
+		hc: prometheus.NewCounter(
 			prometheus.CounterOpts{
 				Name: "hcheck_cnt",
 				Help: "Healthcheck request counter",
 			},
 		),
-		ih: infra.NewHandler(app.NewService(m)),
+		ih: infra.NewHandler(app.NewService()),
 		ph: promhttp.HandlerFor(pr, promhttp.HandlerOpts{Registry: pr}),
 	}
 
-	pr.MustRegister(h.pc)
+	pr.MustRegister(h.rc)
+	pr.MustRegister(h.hc)
 
 	s := http.Server{
 		Addr:    ":8080",

@@ -10,23 +10,11 @@ import (
 
 const traceIdKey = "TraceId"
 
-type Counter interface {
-	Inc()
-}
-
-type Metrics interface {
-	NewCounter(name, human_readable string) Counter
-}
-
 type Service struct {
-	hello_cnt, world_cnt Counter
 }
 
-func NewService(m Metrics) *Service {
-	return &Service{
-		hello_cnt: m.NewCounter("hello_cnt", "hello instance allocated count"),
-		world_cnt: m.NewCounter("world_cnt", "world instance allocated count"),
-	}
+func NewService() *Service {
+	return &Service{}
 }
 
 func (s *Service) CreateContext(ctx context.Context) context.Context {
@@ -42,8 +30,6 @@ func (s *Service) Hello(ctx context.Context) *domain.Hello {
 
 	slog.Info("create", "traceid", s.GetTraceId(ctx), "class", h.String(), "address", fmt.Sprintf("%p", &h))
 
-	s.hello_cnt.Inc()
-
 	return &h
 }
 
@@ -51,8 +37,6 @@ func (s *Service) World(ctx context.Context) *domain.World {
 	w := domain.NewWorld()
 
 	slog.Info("create", "traceid", s.GetTraceId(ctx), "class", w.String(), "address", fmt.Sprintf("%p", &w))
-
-	s.world_cnt.Inc()
 
 	return &w
 }
