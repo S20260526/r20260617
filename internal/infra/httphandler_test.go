@@ -6,5 +6,6 @@ import (
 )
 
 func TestUseCase(t *testing.T) {
-	NewHandler(app.NewService())
+	NewHandler(app.NewHelloService())
+	NewHandler(app.NewWorldService())
 }

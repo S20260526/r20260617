@@ -56,8 +56,10 @@ func relay(tag, url string) chan string {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-	helloCh := relay("hello", "http://m20260618-hello")
-	worldCh := relay("world", "http://m20260618-world")
+	slog.Info("request", "from", r.RemoteAddr, "to", r.Host, "URI", r.RequestURI)
+
+	helloCh := relay("hello", "http://m20260618-hello:8080")
+	worldCh := relay("world", "http://m20260618-world:8080")
 
 	hello := <-helloCh
 	world := <-worldCh

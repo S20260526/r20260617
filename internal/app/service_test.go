@@ -1,39 +1,32 @@
 package app
 
 import (
-	"context"
 	"domain"
 	"testing"
 )
 
-func cmp[U comparable](u *U, v *U, t *testing.T) {
-	if u == v {
-		t.Logf("note: got a singleton of %#v@%p", u, v)
+func cmp[U comparable](dt domain.Term, u *U, t *testing.T) {
+	u1 := dt.(U)
+
+	if &u1 == u {
+		t.Logf("note: got a singleton of %#v@%p", *u, u)
 	}
 
-	if *u != *v {
+	if u1 != *u {
 		t.Fatal("instances not equal")
 	}
 }
 
-func TestContext(t *testing.T) {
-	s := NewService()
+func TestHello(t *testing.T) {
+	s := NewHelloService()
+	h := domain.NewHello()
 
-	ctx := s.CreateContext(context.Background())
-
-	if s.GetTraceId(ctx) == "" {
-		t.Fatal("got empty TraceId")
-	}
+	cmp(s.Get(), &h, t)
 }
 
-func TestService(t *testing.T) {
-	s := NewService()
-
-	h := domain.NewHello()
+func TestWorld(t *testing.T) {
+	s := NewWorldService()
 	w := domain.NewWorld()
 
-	ctx := s.CreateContext(context.Background())
-
-	cmp(s.Hello(ctx), &h, t)
-	cmp(s.World(ctx), &w, t)
+	cmp(s.Get(), &w, t)
 }
