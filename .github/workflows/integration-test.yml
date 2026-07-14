@@ -9,10 +9,14 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      server:
+      entry:
         image: ghcr.io/s20260526/m20260618-entry:latest
         ports:
           - 8080:8080
+      hello:
+        image: ghcr.io/s20260526/m20260618-hello:latest
+      world:
+        image: ghcr.io/s20260526/m20260618-world:latest
 
     steps:
       - name: run
