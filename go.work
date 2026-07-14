@@ -4,8 +4,8 @@ use (
 	./entry
 	./hcheck
 	./hello
+	./world
 	./internal/app
 	./internal/domain
 	./internal/infra
-	./world
 )

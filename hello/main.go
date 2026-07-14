@@ -13,7 +13,7 @@ func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, nil)))
 
 	s := http.Server{
-		Addr:    ":8081",
+		Addr:    ":8080",
 		Handler: infra.NewHandler(app.NewHelloService()),
 	}
 

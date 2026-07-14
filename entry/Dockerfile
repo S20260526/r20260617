@@ -1,12 +1,13 @@
 FROM golang:alpine AS b
 WORKDIR /b
 
-COPY internal/ /b/internal/
-COPY entry/ /b/entry/
-COPY hcheck/ /b/hcheck
 COPY go.work /b/
+COPY entry/ /b/entry/
+COPY hcheck/ /b/hcheck/
+COPY hello/ /b/hello/
+COPY world/ /b/world/
+COPY internal/ /b/internal/
 
-RUN go mod download
 RUN go build ./entry
 RUN go build ./hcheck/
 
