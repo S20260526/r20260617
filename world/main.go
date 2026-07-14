@@ -39,7 +39,7 @@ func main() {
 
 	slog.Info("server", "state", "started")
 
-	e = s.ListenAndServe()
+	e = s.ListenAndServeTLS("", "")
 
 	if e != nil {
 		panic(e)
