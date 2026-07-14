@@ -10,19 +10,24 @@ COPY internal/ /b/internal/
 
 RUN go build ./hello
 
-COPY ca.crt/ /b/
-COPY ca.key/ /b/
+FROM ubuntu:latest AS s
+
+RUN apt-get update
+RUN apt-get install -y openssl
+
+COPY ca.crt/ /
+COPY ca.key/ /
 
 RUN openssl genrsa -out server.key
-RUN openssl req -new -key server.key -out cerver.csr
-RUN openssl x509 -req -batch -in server.csr -CA ca.crt -CAkey ca.key -out server.crt -days 3650 -subj '/CN=hello'
+RUN openssl req -batch -new -key server.key -out server.csr -subj '/CN=hello'
+RUN openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -out server.crt -days 3650
 
 FROM scratch
 
 COPY --from=b /b/m20260618-hello /m20260618-hello
 
-COPY --from=b /b/ca.crt /
-COPY --from=b /b/server.crt /
-COPY --from=b /b/server.key /
+COPY --from=s /ca.crt /
+COPY --from=s /server.crt /
+COPY --from=s /server.key /
 
 ENTRYPOINT ["/m20260618-hello"]
