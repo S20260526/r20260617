@@ -46,6 +46,9 @@ jobs:
           CA_CRT: ${{secrets.CA_CRT}}
         run:
           echo "$CA_CRT" > ca.crt
+      - shell: bash
+        run:
+          ls -la .
       - uses: docker/login-action@v4
         with:
           registry: ghcr.io
