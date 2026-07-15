@@ -65,8 +65,8 @@ func (h *EntryHandler) requestHandler(w http.ResponseWriter, r *http.Request) {
 
 	h.requestCount.Inc()
 
-	helloCh := h.relay("hello", "https://hello:8081")
-	worldCh := h.relay("world", "https://world:8082")
+	helloCh := h.relay("hello", "https://hello:8080")
+	worldCh := h.relay("world", "https://world:8080")
 
 	hello := <-helloCh
 	world := <-worldCh
