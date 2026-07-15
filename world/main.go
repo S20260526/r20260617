@@ -32,8 +32,8 @@ func main() {
 	tc.ClientAuth = tls.RequireAndVerifyClientCert
 
 	s := http.Server{
-		Addr:    ":8080",
-		Handler: infra.NewHandler(app.NewWorldService()),
+		Addr:      ":8080",
+		Handler:   infra.NewHandler(app.NewWorldService()),
 		TLSConfig: tc,
 	}
 
