@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"log/slog"
@@ -8,24 +9,28 @@ import (
 	"os"
 	"time"
 
+	"infra"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type EntryHandler struct {
-	requestCount, hcheckCount       prometheus.Counter
-	promHttpHandler, requestHandler http.Handler
+	transport                 *http.Transport
+	requestCount, hcheckCount prometheus.Counter
+	promHttpHandler           http.Handler
 }
 
-func relay(tag, url string) chan string {
+func (h *EntryHandler) relay(tag, url string) chan string {
 	ch := make(chan string)
 
 	go func() {
 		defer close(ch)
 
 		cl := http.Client{
-			Timeout: 5 * time.Second,
+			Transport: h.transport,
+			Timeout:   5 * time.Second,
 		}
 
 		r, e := cl.Get(url)
@@ -55,11 +60,13 @@ func relay(tag, url string) chan string {
 	return ch
 }
 
-func requestHandler(w http.ResponseWriter, r *http.Request) {
+func (h *EntryHandler) requestHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Info("request", "from", r.RemoteAddr, "to", r.Host, "URI", r.RequestURI)
 
-	helloCh := relay("hello", "http://hello:8080")
-	worldCh := relay("world", "http://world:8080")
+	h.requestCount.Inc()
+
+	helloCh := h.relay("hello", "https://hello:8081")
+	worldCh := h.relay("world", "https://world:8082")
 
 	hello := <-helloCh
 	world := <-worldCh
@@ -72,20 +79,40 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("%s, %s!", hello, world)))
 }
 
-func (h EntryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *EntryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.RequestURI == "/hcheck" {
 		h.hcheckCount.Inc()
 	} else if r.RequestURI == "/prometrics" {
 		h.promHttpHandler.ServeHTTP(w, r)
 	} else {
-		h.requestCount.Inc()
-
-		requestHandler(w, r)
+		h.requestHandler(w, r)
 	}
 }
 
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, nil)))
+
+	tc := &tls.Config{}
+
+	var e error
+
+	tc.Certificates, e = infra.ServerCertFromFile("client.crt", "client.key")
+
+	if e != nil {
+		panic(e)
+	}
+
+	tc.ClientCAs, e = infra.CaCertFromFile("ca.crt")
+
+	if e != nil {
+		panic(e)
+	}
+
+	tc.RootCAs, e = infra.CaCertFromFile("ca.crt")
+
+	if e != nil {
+		panic(e)
+	}
 
 	pr := prometheus.NewRegistry()
 
@@ -95,6 +122,9 @@ func main() {
 	)
 
 	h := EntryHandler{
+		transport: &http.Transport{
+			TLSClientConfig: tc,
+		},
 		requestCount: prometheus.NewCounter(
 			prometheus.CounterOpts{
 				Name: "request_cnt",
@@ -115,12 +145,12 @@ func main() {
 
 	s := http.Server{
 		Addr:    ":8080",
-		Handler: h,
+		Handler: &h,
 	}
 
 	slog.Info("server", "state", "started")
 
-	e := s.ListenAndServe()
+	e = s.ListenAndServe()
 
 	if e != nil {
 		panic(e)
