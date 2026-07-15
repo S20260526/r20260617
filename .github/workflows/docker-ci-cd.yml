@@ -36,6 +36,16 @@ jobs:
       contents: read
       packages: write
     steps:
+      - shell: bash
+        env:
+          CA_KEY: ${{secrets.CA_KEY}}
+        run:
+          echo "$CA_KEY" > ca.key
+      - shell: bash
+        env:
+          CA_CRT: ${{secrets.CA_CRT}}
+        run:
+          echo "$CA_CRT" > ca.crt
       - uses: docker/login-action@v4
         with:
           registry: ghcr.io
