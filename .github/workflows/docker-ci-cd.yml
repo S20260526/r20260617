@@ -42,31 +42,27 @@ jobs:
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
       - uses: docker/setup-buildx-action@v4
-      - shell: bash
-        env:
-          CA_KEY: ${{secrets.CA_KEY}}
-        run:
-          echo "$CA_KEY" > ca.key
-      - shell: bash
-        env:
-          CA_CRT: ${{secrets.CA_CRT}}
-        run:
-          echo "$CA_CRT" > ca.crt
-      - shell: bash
-        run:
-          ls -la .
       - uses: docker/build-push-action@v7
         with:
           file: entry/Dockerfile
+          secrets: |
+            "CA_KEY=${{secrets.CA_KEY}}"
+            "CA_CRT=${{secrets.CA_CRT}}"
           push: true
           tags: ghcr.io/s20260526/m20260618-entry:latest
       - uses: docker/build-push-action@v7
         with:
           file: hello/Dockerfile
+          secrets: |
+            "CA_KEY=${{secrets.CA_KEY}}"
+            "CA_CRT=${{secrets.CA_CRT}}"
           push: true
           tags: ghcr.io/s20260526/m20260618-hello:latest
       - uses: docker/build-push-action@v7
         with:
           file: world/Dockerfile
+          secrets: |
+            "CA_KEY=${{secrets.CA_KEY}}"
+            "CA_CRT=${{secrets.CA_CRT}}"
           push: true
           tags: ghcr.io/s20260526/m20260618-world:latest

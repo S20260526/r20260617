@@ -16,13 +16,11 @@ FROM ubuntu:latest AS c
 RUN apt-get update
 RUN apt-get install -y openssl
 
-COPY ca.crt/ /
-COPY ca.key/ /
 COPY entry/openssl.cnf /
 
 RUN openssl genrsa -out client.key 4096
 RUN openssl req -new -key client.key -out client.csr -config openssl.cnf
-RUN openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -out client.crt -days 3650 -extfile openssl.cnf -extensions v3_req
+RUN --mount=type=secret,id=CA_KEY,target=/ca.key --mount=type=secret,id=CA_CRT,target=/ca.crt openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -out client.crt -days 3650 -extfile openssl.cnf -extensions v3_req
 
 FROM scratch
 
