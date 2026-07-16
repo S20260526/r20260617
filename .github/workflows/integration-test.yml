@@ -6,15 +6,6 @@ on:
 
 jobs:
   main:
-    secrets:
-      CA_CRT: ${{secrets.CA_CRT}}
-      ENTRY_CRT: ${{secrets.ENTRY_CRT}}
-      ENTRY_KEY: ${{secrets.ENTRY_KEY}}
-      HELLO_CRT: ${{secrets.HELLO_CRT}}
-      HELLO_KEY: ${{secrets.HELLO_KEY}}
-      WORLD_CRT: ${{secrets.WORLD_CRT}}
-      WORLD_KEY: ${{secrets.WORLD_KEY}}
-
     runs-on: ubuntu-latest
 
     services:
