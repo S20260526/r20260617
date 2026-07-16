@@ -45,24 +45,15 @@ jobs:
       - uses: docker/build-push-action@v7
         with:
           file: entry/Dockerfile
-          secrets: |
-            "CA_KEY=${{secrets.CA_KEY}}"
-            "CA_CRT=${{secrets.CA_CRT}}"
           push: true
           tags: ghcr.io/s20260526/m20260618-entry:latest
       - uses: docker/build-push-action@v7
         with:
           file: hello/Dockerfile
-          secrets: |
-            "CA_KEY=${{secrets.CA_KEY}}"
-            "CA_CRT=${{secrets.CA_CRT}}"
           push: true
           tags: ghcr.io/s20260526/m20260618-hello:latest
       - uses: docker/build-push-action@v7
         with:
           file: world/Dockerfile
-          secrets: |
-            "CA_KEY=${{secrets.CA_KEY}}"
-            "CA_CRT=${{secrets.CA_CRT}}"
           push: true
           tags: ghcr.io/s20260526/m20260618-world:latest
