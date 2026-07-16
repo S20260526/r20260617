@@ -33,6 +33,7 @@ services:
     image: haproxy:3.0
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./entry.pem:/usr/local/etc/haproxy/certs/domain.pem:ro
     ports:
       - "8080:8080"
     depends_on:

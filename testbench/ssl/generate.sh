@@ -9,6 +9,8 @@ openssl genrsa -out entry.key 4096
 openssl req -new -key entry.key -out entry.csr -config entry.cnf
 openssl x509 -req -in entry.csr -CA ca.crt -CAkey ca.key -out entry.crt -days 3650 -extfile entry.cnf -extensions v3_req
 
+cat entry.crt entry.key > entry.pem
+
 openssl genrsa -out hello.key 4096
 openssl req -new -key hello.key -out hello.csr -config hello.cnf
 openssl x509 -req -in hello.csr -CA ca.crt -CAkey ca.key -out hello.crt -days 3650 -extfile hello.cnf -extensions v3_req
