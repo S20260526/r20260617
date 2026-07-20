@@ -42,6 +42,9 @@ services:
 
   t:
     image: ubuntu:latest
+    tty: true
+    volumes:
+      - ./ssl/ca.crt:/ca.crt
 
   l:
     image: grafana/loki:3.7
