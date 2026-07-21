@@ -5,6 +5,9 @@ rm -f *.csr *.key *.crt
 openssl genrsa -out ca.key 4096
 openssl req -noenc -x509 -key ca.key -days 36500 -out ca.crt -batch
 
+openssl genrsa -out jwt.key 4096
+openssl rsa -inform PEM -outform PEM -in jwt.key -pubout -out jwt.pub
+
 openssl genrsa -out entry.key 4096
 openssl req -new -key entry.key -out entry.csr -config entry.cnf
 openssl x509 -req -in entry.csr -CA ca.crt -CAkey ca.key -out entry.crt -days 3650 -extfile entry.cnf -extensions v3_req

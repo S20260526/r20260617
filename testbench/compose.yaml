@@ -5,6 +5,8 @@ services:
     image: ghcr.io/s20260526/m20260618-entry:latest
     volumes:
       - ./ssl/ca.crt:/ca.crt
+      - ./ssl/jwt.key:/jwt.key
+      - ./ssl/jwt.pub:/jwt.pub
       - ./ssl/entry.crt:/client.crt
       - ./ssl/entry.key:/client.key
 
@@ -12,6 +14,8 @@ services:
     image: ghcr.io/s20260526/m20260618-entry:latest
     volumes:
       - ./ssl/ca.crt:/ca.crt
+      - ./ssl/jwt.key:/jwt.key
+      - ./ssl/jwt.pub:/jwt.pub
       - ./ssl/entry.crt:/client.crt
       - ./ssl/entry.key:/client.key
 
