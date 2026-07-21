@@ -49,6 +49,7 @@ services:
     tty: true
     volumes:
       - ./ssl/ca.crt:/ca.crt
+      - ./ssl/ca.key:/ca.key
 
   l:
     image: grafana/loki:3.7
