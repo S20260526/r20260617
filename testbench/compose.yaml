@@ -3,25 +3,53 @@ name: testbench
 services:
   entry1:
     image: ghcr.io/s20260526/m20260618-entry:latest
+    volumes:
+      - ./ssl/ca.crt:/ca.crt
+      - ./ssl/jwt.key:/jwt.key
+      - ./ssl/jwt.pub:/jwt.pub
+      - ./ssl/entry.crt:/client.crt
+      - ./ssl/entry.key:/client.key
 
   entry2:
     image: ghcr.io/s20260526/m20260618-entry:latest
+    volumes:
+      - ./ssl/ca.crt:/ca.crt
+      - ./ssl/jwt.key:/jwt.key
+      - ./ssl/jwt.pub:/jwt.pub
+      - ./ssl/entry.crt:/client.crt
+      - ./ssl/entry.key:/client.key
 
   hello:
     image: ghcr.io/s20260526/m20260618-hello:latest
+    volumes:
+      - ./ssl/ca.crt:/ca.crt
+      - ./ssl/hello.crt:/server.crt
+      - ./ssl/hello.key:/server.key
 
   world:
     image: ghcr.io/s20260526/m20260618-world:latest
+    volumes:
+      - ./ssl/ca.crt:/ca.crt
+      - ./ssl/world.crt:/server.crt
+      - ./ssl/world.key:/server.key
 
   h:
     image: haproxy:3.0
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./ssl/entry.pem:/usr/local/etc/haproxy/certs/domain.pem:ro
     ports:
       - "8080:8080"
     depends_on:
       - entry1
       - entry2
+
+  t:
+    image: ubuntu:latest
+    tty: true
+    volumes:
+      - ./ssl/ca.crt:/ca.crt
+      - ./ssl/ca.key:/ca.key
 
   l:
     image: grafana/loki:3.7

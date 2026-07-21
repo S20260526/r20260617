@@ -11,5 +11,7 @@ COPY internal/ /b/internal/
 RUN go build ./hello
 
 FROM scratch
+
 COPY --from=b /b/m20260618-hello /m20260618-hello
+
 ENTRYPOINT ["/m20260618-hello"]

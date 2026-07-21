@@ -11,5 +11,7 @@ COPY internal/ /b/internal/
 RUN go build ./world
 
 FROM scratch
+
 COPY --from=b /b/m20260618-world /m20260618-world
+
 ENTRYPOINT ["/m20260618-world"]
