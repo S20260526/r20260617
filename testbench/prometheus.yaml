@@ -6,4 +6,4 @@ scrape_configs:
   - job_name: "prometheus"
     metrics_path: "prometrics"
     static_configs:
-      - targets: ["a1:8080", "a2:8080"]
+      - targets: ["entry1:8080", "entry2:8080"]
