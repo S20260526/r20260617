@@ -13,6 +13,8 @@ import (
 
 	"infra"
 
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -53,11 +55,10 @@ func (jws *JwtStaff) VerifyToken(t string) error {
 	return e
 }
 
-type EntryHandler struct {
-	transport                 *http.Transport
-	jwtStaff                  *JwtStaff
-	requestCount, hcheckCount prometheus.Counter
-	promHttpHandler           http.Handler
+type HelloHandler struct {
+	clientTransport *http.Transport
+	jwtStaff        *JwtStaff
+	requestCount    prometheus.Counter
 }
 
 func panicIf(e error) {
@@ -103,14 +104,14 @@ func openTlsConfig() *tls.Config {
 	return tc
 }
 
-func (h *EntryHandler) relay(tag, url string) chan string {
+func (h *HelloHandler) relay(tag, url string) chan string {
 	ch := make(chan string)
 
 	go func() {
 		defer close(ch)
 
 		cl := http.Client{
-			Transport: h.transport,
+			Transport: h.clientTransport,
 			Timeout:   5 * time.Second,
 		}
 
@@ -141,17 +142,9 @@ func (h *EntryHandler) relay(tag, url string) chan string {
 	return ch
 }
 
-func (h *EntryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.RequestURI == "/hcheck" {
-		h.hcheckCount.Inc()
-	} else if r.RequestURI == "/prometrics" {
-		h.promHttpHandler.ServeHTTP(w, r)
-	} else {
-		h.requestHandler(w, r)
-	}
-}
+func (h *HelloHandler) Handle(c echo.Context) error {
+	r := c.Request()
 
-func (h *EntryHandler) requestHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Info("request", "from", r.RemoteAddr, "to", r.Host, "URI", r.RequestURI)
 
 	h.requestCount.Inc()
@@ -159,30 +152,29 @@ func (h *EntryHandler) requestHandler(w http.ResponseWriter, r *http.Request) {
 	t := r.Header.Get("X-Token")
 
 	if t == "" {
-		h.noToken(w, r)
+		return h.noToken(c)
 	} else if !h.verifyToken(t) {
-		w.WriteHeader(http.StatusForbidden)
+		return c.NoContent(http.StatusForbidden)
 	} else {
-		h.tokenAccepted(w, r)
+		return h.tokenAccepted(c)
 	}
 }
 
-func (h *EntryHandler) noToken(w http.ResponseWriter, r *http.Request) {
+func (h *HelloHandler) noToken(c echo.Context) error {
 	t, e := h.jwtStaff.NewToken()
 
 	if e != nil {
 		slog.Info("JWT", "token", e)
 
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	slog.Info("JWT", "token", "created")
 
-	w.Write([]byte(t))
+	return c.String(http.StatusOK, t)
 }
 
-func (h *EntryHandler) verifyToken(t string) bool {
+func (h *HelloHandler) verifyToken(t string) bool {
 	e := h.jwtStaff.VerifyToken(t)
 
 	if e != nil {
@@ -194,7 +186,7 @@ func (h *EntryHandler) verifyToken(t string) bool {
 	return true
 }
 
-func (h *EntryHandler) tokenAccepted(w http.ResponseWriter, r *http.Request) {
+func (h *HelloHandler) tokenAccepted(c echo.Context) error {
 	helloCh := h.relay("hello", "https://hello:8080")
 	worldCh := h.relay("world", "https://world:8080")
 
@@ -202,11 +194,10 @@ func (h *EntryHandler) tokenAccepted(w http.ResponseWriter, r *http.Request) {
 	world := <-worldCh
 
 	if hello == "" || world == "" {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	w.Write([]byte(fmt.Sprintf("%s, %s!", hello, world)))
+	return c.String(http.StatusOK, fmt.Sprintf("%s, %s!", hello, world))
 }
 
 func main() {
@@ -219,8 +210,17 @@ func main() {
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 	)
 
-	h := EntryHandler{
-		transport: &http.Transport{
+	hcheckCount := prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "hcheck_cnt",
+			Help: "Healthcheck request counter",
+		},
+	)
+
+	pr.MustRegister(hcheckCount)
+
+	h := HelloHandler{
+		clientTransport: &http.Transport{
 			TLSClientConfig: openTlsConfig(),
 		},
 		jwtStaff: openJwtStaff(),
@@ -230,24 +230,30 @@ func main() {
 				Help: "Hello, world! request counter",
 			},
 		),
-		hcheckCount: prometheus.NewCounter(
-			prometheus.CounterOpts{
-				Name: "hcheck_cnt",
-				Help: "Healthcheck request counter",
-			},
-		),
-		promHttpHandler: promhttp.HandlerFor(pr, promhttp.HandlerOpts{Registry: pr}),
 	}
 
 	pr.MustRegister(h.requestCount)
-	pr.MustRegister(h.hcheckCount)
 
-	s := http.Server{
-		Addr:    ":8080",
-		Handler: &h,
-	}
+	e := echo.New()
 
-	slog.Info("server", "state", "started")
+	e.HideBanner = true
+	e.HidePort = true
 
-	panicIf(s.ListenAndServe())
+	e.Use(middleware.Recover())
+
+	e.GET(
+		"/hcheck", func(c echo.Context) error {
+			hcheckCount.Inc()
+
+			return c.NoContent(http.StatusOK)
+		},
+	)
+
+	e.GET("/prometrics", echo.WrapHandler(promhttp.Handler()))
+
+	e.GET("/", h.Handle)
+
+	slog.Info("server", "state", "starting")
+
+	panicIf(e.Start(":8080"))
 }
