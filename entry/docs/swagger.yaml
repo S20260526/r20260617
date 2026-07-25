@@ -1,0 +1,34 @@
+basePath: /
+info:
+  contact:
+    email: dont.spam.me@example.com
+    name: A.U.Thor
+  description: Hello world entry point
+  license:
+    name: GNU
+  title: Hello world entry API
+  version: "1.0"
+paths:
+  /:
+    get:
+      description: return simple greeting
+      parameters:
+      - description: JWT access token
+        in: header
+        name: X-Token
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      summary: greeting
+      tags:
+      - hello
+swagger: "2.0"

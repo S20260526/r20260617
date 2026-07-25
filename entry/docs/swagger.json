@@ -1,0 +1,52 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Hello world entry point",
+        "title": "Hello world entry API",
+        "contact": {
+            "name": "A.U.Thor",
+            "email": "dont.spam.me@example.com"
+        },
+        "license": {
+            "name": "GNU"
+        },
+        "version": "1.0"
+    },
+    "basePath": "/",
+    "paths": {
+        "/": {
+            "get": {
+                "description": "return simple greeting",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "hello"
+                ],
+                "summary": "greeting",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JWT access token",
+                        "name": "X-Token",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        }
+    }
+}
