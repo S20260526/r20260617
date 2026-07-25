@@ -13,11 +13,14 @@ import (
 
 	"infra"
 
+	_ "m20260618-entry/docs"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -142,6 +145,15 @@ func (h *HelloHandler) relay(tag, url string) chan string {
 	return ch
 }
 
+// @Summary		greeting
+// @Description	return simple greeting
+// @Tags			hello
+// @Produce		text/plain
+// @Param			X-Token	header		string	false	"JWT access token"
+// @Success		200		{string}	string
+// @Failure		403
+// @Failure		500
+// @Router			/ [get]
 func (h *HelloHandler) Handle(c echo.Context) error {
 	r := c.Request()
 
@@ -200,6 +212,13 @@ func (h *HelloHandler) tokenAccepted(c echo.Context) error {
 	return c.String(http.StatusOK, fmt.Sprintf("%s, %s!", hello, world))
 }
 
+// @title			Hello world entry API
+// @version		1.0
+// @description	Hello world entry point
+// @contact.name	A.U.Thor
+// @contact.email	dont.spam.me@example.com
+// @license.name	GNU
+// @BasePath		/
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, nil)))
 
@@ -240,6 +259,16 @@ func main() {
 	e.HidePort = true
 
 	e.Use(middleware.Recover())
+
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
+	e.GET(
+		"/swagit", func(c echo.Context) error {
+			return c.Redirect(
+				http.StatusMovedPermanently,
+				"/swagger/index.html",
+			)
+		},
+	)
 
 	e.GET(
 		"/hcheck", func(c echo.Context) error {
