@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	html "html/template"
 	"io"
 	"log/slog"
 	"net/http"
@@ -24,6 +25,9 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+const HelloHostPort = "hello:8081"
+const WorldHostPort = "world:8080"
 
 type JwtStaff struct {
 	privKey *rsa.PrivateKey
@@ -62,6 +66,7 @@ type HelloHandler struct {
 	clientTransport *http.Transport
 	jwtStaff        *JwtStaff
 	requestCount    prometheus.Counter
+	statusHtml      *html.Template
 }
 
 func panicIf(e error) {
@@ -107,7 +112,19 @@ func openTlsConfig() *tls.Config {
 	return tc
 }
 
-func (h *HelloHandler) relay(tag, url string) chan string {
+func (h *HelloHandler) dial(hostPort string) error {
+	c, e := tls.Dial("tcp", hostPort, h.clientTransport.TLSClientConfig)
+
+	if e == nil {
+		defer c.Close()
+	} else {
+		slog.Info("dial", "TLS error", e)
+	}
+
+	return e
+}
+
+func (h *HelloHandler) relay(tag, hostPort string) chan string {
 	ch := make(chan string)
 
 	go func() {
@@ -118,7 +135,7 @@ func (h *HelloHandler) relay(tag, url string) chan string {
 			Timeout:   5 * time.Second,
 		}
 
-		r, e := cl.Get(url)
+		r, e := cl.Get("https://" + hostPort)
 
 		if e != nil {
 			slog.Info(tag, "error", e)
@@ -143,6 +160,35 @@ func (h *HelloHandler) relay(tag, url string) chan string {
 	}()
 
 	return ch
+}
+
+func (h *HelloHandler) Status(c echo.Context) error {
+	hl := "ok"
+	w := "ok"
+
+	if h.dial(HelloHostPort) != nil {
+		hl = "err"
+	}
+
+	if h.dial(WorldHostPort) != nil {
+		w = "err"
+	}
+
+	e := h.statusHtml.Execute(
+		c.Response().Writer,
+		struct {
+			Hello, World string
+		}{
+			Hello: hl,
+			World: w,
+		},
+	)
+
+	if e != nil {
+		slog.Info("status", "error", e)
+	}
+
+	return nil
 }
 
 // @Summary		greeting
@@ -199,8 +245,8 @@ func (h *HelloHandler) verifyToken(t string) bool {
 }
 
 func (h *HelloHandler) tokenAccepted(c echo.Context) error {
-	helloCh := h.relay("hello", "https://hello:8080")
-	worldCh := h.relay("world", "https://world:8080")
+	helloCh := h.relay("hello", HelloHostPort)
+	worldCh := h.relay("world", WorldHostPort)
 
 	hello := <-helloCh
 	world := <-worldCh
@@ -249,6 +295,33 @@ func main() {
 				Help: "Hello, world! request counter",
 			},
 		),
+		statusHtml: html.Must(
+			html.New("status").Parse(`
+			  {{ define "statusBlock" }}
+			    {{ if eq . "ok" }}
+			      <p style="color: green;">Online</p>
+			    {{ else if eq . "err" }}
+			      <p style="color: red;">Offline</p>
+			    {{ else }}
+			      <p>N/A</p>
+			    {{ end }}
+			  {{ end }}
+			  <!DOCTYPE html>
+			    <html>
+			      <head>
+			        <meta charset="latin-1">
+			        <title>Status</title>
+			      </head>
+			      <body>
+			        <h1>Status</h1>
+				<h2>Hello:</h2>
+				{{ template "statusBlock" .Hello }}
+				<h2>World:</h2>
+				{{ template "statusBlock" .World }}
+			      </body>
+			    </html>
+			`),
+		),
 	}
 
 	pr.MustRegister(h.requestCount)
@@ -279,6 +352,8 @@ func main() {
 	)
 
 	e.GET("/prometrics", echo.WrapHandler(promhttp.Handler()))
+
+	e.GET("/status", h.Status)
 
 	e.GET("/", h.Handle)
 
