@@ -26,7 +26,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const HelloHostPort = "hello:8081"
+const HelloHostPort = "hello:8080"
 const WorldHostPort = "world:8080"
 
 type JwtStaff struct {
