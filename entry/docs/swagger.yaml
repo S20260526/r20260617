@@ -9,9 +9,31 @@ info:
   title: Hello world entry API
   version: "1.0"
 paths:
-  /:
+  /grpc:
     get:
-      description: return simple greeting
+      description: return simple greeting via gRPC backend API
+      parameters:
+      - description: JWT access token
+        in: header
+        name: X-Token
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      summary: greeting
+      tags:
+      - hello
+  /rest:
+    get:
+      description: return simple greeting via RESTfull backend API
       parameters:
       - description: JWT access token
         in: header

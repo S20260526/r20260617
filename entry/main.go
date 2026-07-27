@@ -26,8 +26,28 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const HelloHostPort = "hello:8080"
-const WorldHostPort = "world:8080"
+type Backend struct {
+	host string
+	port int
+}
+
+func (b *Backend) hostPort() string {
+	return fmt.Sprintf("%s:%d", b.host, b.port)
+}
+
+func (b *Backend) restUrl() string {
+	return fmt.Sprintf("https://%s:%d", b.host, b.port)
+}
+
+var HelloBackend = &Backend{
+	host: "hello",
+	port: 8080,
+}
+
+var WorldBackend = &Backend{
+	host: "world",
+	port: 8080,
+}
 
 type JwtStaff struct {
 	privKey *rsa.PrivateKey
@@ -112,8 +132,8 @@ func openTlsConfig() *tls.Config {
 	return tc
 }
 
-func (h *HelloHandler) dial(hostPort string) error {
-	c, e := tls.Dial("tcp", hostPort, h.tlsClientConfig)
+func (h *HelloHandler) dial(b *Backend) error {
+	c, e := tls.Dial("tcp", b.hostPort(), h.tlsClientConfig)
 
 	if e == nil {
 		defer c.Close()
@@ -124,7 +144,7 @@ func (h *HelloHandler) dial(hostPort string) error {
 	return e
 }
 
-func (h *HelloHandler) relay(hostPort string) chan string {
+func (h *HelloHandler) relay(b *Backend) chan string {
 	ch := make(chan string)
 
 	go func() {
@@ -137,28 +157,28 @@ func (h *HelloHandler) relay(hostPort string) chan string {
 			Timeout: 5 * time.Second,
 		}
 
-		r, e := cl.Get("https://" + hostPort)
+		r, e := cl.Get(b.restUrl())
 
 		if e != nil {
-			slog.Info(hostPort, "error", e)
+			slog.Info("relay", "host", b.host, "error", e)
 			return
 		}
 
 		defer r.Body.Close()
 
 		if r.StatusCode != 200 {
-			slog.Info(hostPort, "status", r.StatusCode)
+			slog.Info("relay", "host", b.host, "status", r.StatusCode)
 			return
 		}
 
-		b, e := io.ReadAll(r.Body)
+		term, e := io.ReadAll(r.Body)
 
 		if e != nil {
-			slog.Info(hostPort, "read error", e)
+			slog.Info("relay", "host", b.host, "read error", e)
 			return
 		}
 
-		ch <- string(b)
+		ch <- string(term)
 	}()
 
 	return ch
@@ -168,11 +188,11 @@ func (h *HelloHandler) Status(c echo.Context) error {
 	hl := "ok"
 	w := "ok"
 
-	if h.dial(HelloHostPort) != nil {
+	if h.dial(HelloBackend) != nil {
 		hl = "err"
 	}
 
-	if h.dial(WorldHostPort) != nil {
+	if h.dial(WorldBackend) != nil {
 		w = "err"
 	}
 
@@ -194,15 +214,32 @@ func (h *HelloHandler) Status(c echo.Context) error {
 }
 
 // @Summary		greeting
-// @Description	return simple greeting
+// @Description	return simple greeting via RESTfull backend API
 // @Tags			hello
 // @Produce		text/plain
 // @Param			X-Token	header		string	false	"JWT access token"
 // @Success		200		{string}	string
 // @Failure		403
 // @Failure		500
-// @Router			/ [get]
-func (h *HelloHandler) Handle(c echo.Context) error {
+// @Router			/rest [get]
+func (h *HelloHandler) Rest(c echo.Context) error {
+	return h.handle(c)
+}
+
+// @Summary		greeting
+// @Description	return simple greeting via gRPC backend API
+// @Tags			hello
+// @Produce		text/plain
+// @Param			X-Token	header		string	false	"JWT access token"
+// @Success		200		{string}	string
+// @Failure		403
+// @Failure		500
+// @Router			/grpc [get]
+func (h *HelloHandler) Grpc(c echo.Context) error {
+	return h.handle(c)
+}
+
+func (h *HelloHandler) handle(c echo.Context) error {
 	r := c.Request()
 
 	slog.Info("request", "from", r.RemoteAddr, "to", r.Host, "URI", r.RequestURI)
@@ -247,8 +284,8 @@ func (h *HelloHandler) verifyToken(t string) bool {
 }
 
 func (h *HelloHandler) tokenAccepted(c echo.Context) error {
-	helloCh := h.relay(HelloHostPort)
-	worldCh := h.relay(WorldHostPort)
+	helloCh := h.relay(HelloBackend)
+	worldCh := h.relay(WorldBackend)
 
 	hello := <-helloCh
 	world := <-worldCh
@@ -355,7 +392,8 @@ func main() {
 
 	e.GET("/status", h.Status)
 
-	e.GET("/", h.Handle)
+	e.GET("/rest", h.Rest)
+	e.GET("/grpc", h.Grpc)
 
 	slog.Info("server", "state", "starting")
 
