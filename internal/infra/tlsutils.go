@@ -39,3 +39,25 @@ func ServerCertFromFile(certFile, keyFile string) ([]tls.Certificate, error) {
 
 	return []tls.Certificate{c}, nil
 }
+
+func LoadTlsConfig() (*tls.Config, error) {
+	tc := &tls.Config{}
+
+	var e error
+
+	tc.Certificates, e = ServerCertFromFile("server.crt", "server.key")
+
+	if e != nil {
+		return tc, e
+	}
+
+	tc.ClientCAs, e = CaCertFromFile("ca.crt")
+
+	if e != nil {
+		return tc, e
+	}
+
+	tc.ClientAuth = tls.RequireAndVerifyClientCert
+
+	return tc, nil
+}

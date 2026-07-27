@@ -8,6 +8,7 @@ use (
 	./hello
 	./internal/app
 	./internal/domain
+	./internal/fubotorp
 	./internal/infra
 	./world
 )

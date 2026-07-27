@@ -3,6 +3,7 @@ package main
 import (
 	"log/slog"
 	"os"
+	"sync"
 
 	"app"
 	"infra"
@@ -11,9 +12,27 @@ import (
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, nil)))
 
-	e := infra.StartMTLSServer(infra.NewHandler(app.NewHelloService()))
+	wg := sync.WaitGroup{}
 
-	slog.Info("hello", "error", e)
+	wg.Add(2)
+
+	go func() {
+		e := infra.StartGrpcServer(infra.NewHandler(app.NewHelloService()))
+
+		slog.Info("HTTP", "error", e)
+
+		os.Exit(1)
+	}()
+
+	go func() {
+		e := infra.StartMTLSServer(infra.NewHandler(app.NewHelloService()))
+
+		slog.Info("gRPC", "error", e)
+
+		os.Exit(1)
+	}()
+
+	wg.Wait()
 
 	os.Exit(1)
 }

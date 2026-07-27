@@ -2,28 +2,15 @@ package infra
 
 import (
 	"log/slog"
-	"crypto/tls"
 	"net/http"
 )
 
 func StartMTLSServer(h Handler) error {
-	tc := &tls.Config{}
-
-	var e error
-
-	tc.Certificates, e = ServerCertFromFile("server.crt", "server.key")
+	tc, e := LoadTlsConfig()
 
 	if e != nil {
 		return e
 	}
-
-	tc.ClientCAs, e = CaCertFromFile("ca.crt")
-
-	if e != nil {
-		return e
-	}
-
-	tc.ClientAuth = tls.RequireAndVerifyClientCert
 
 	s := http.Server{
 		Addr:      ":8080",
@@ -31,7 +18,11 @@ func StartMTLSServer(h Handler) error {
 		TLSConfig: tc,
 	}
 
-	slog.Info("mtls", "state", "started")
+	slog.Info("mtls", "state", "starting")
 
-	return s.ListenAndServeTLS("", "")
+	e = s.ListenAndServeTLS("", "")
+
+	slog.Info("mtls", "state", "exit")
+
+	return e
 }

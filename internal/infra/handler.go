@@ -17,6 +17,10 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.uc.Get().String()))
 }
 
+func (h Handler) Get() string {
+	return h.uc.Get().String()
+}
+
 func NewHandler(uc UseCase) Handler {
 	return Handler{uc: uc}
 }
