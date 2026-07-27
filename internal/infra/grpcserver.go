@@ -15,7 +15,7 @@ type server struct {
 	h Handler
 }
 
-func (s* server) Get(ctx context.Context, r *ft.Rqst) (*ft.Rsps, error) {
+func (s *server) Get(ctx context.Context, r *ft.Rqst) (*ft.Rsps, error) {
 	return &ft.Rsps{Message: s.h.Get()}, nil
 }
 
@@ -44,4 +44,3 @@ func StartGrpcServer(h Handler) error {
 
 	return e
 }
-
