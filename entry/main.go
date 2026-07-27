@@ -63,7 +63,7 @@ func (jws *JwtStaff) VerifyToken(t string) error {
 }
 
 type HelloHandler struct {
-	clientTransport *http.Transport
+	tlsClientConfig *tls.Config
 	jwtStaff        *JwtStaff
 	requestCount    prometheus.Counter
 	statusHtml      *html.Template
@@ -113,7 +113,7 @@ func openTlsConfig() *tls.Config {
 }
 
 func (h *HelloHandler) dial(hostPort string) error {
-	c, e := tls.Dial("tcp", hostPort, h.clientTransport.TLSClientConfig)
+	c, e := tls.Dial("tcp", hostPort, h.tlsClientConfig)
 
 	if e == nil {
 		defer c.Close()
@@ -131,8 +131,10 @@ func (h *HelloHandler) relay(hostPort string) chan string {
 		defer close(ch)
 
 		cl := http.Client{
-			Transport: h.clientTransport,
-			Timeout:   5 * time.Second,
+			Transport: &http.Transport{
+				TLSClientConfig: h.tlsClientConfig,
+			},
+			Timeout: 5 * time.Second,
 		}
 
 		r, e := cl.Get("https://" + hostPort)
@@ -285,10 +287,8 @@ func main() {
 	pr.MustRegister(hcheckCount)
 
 	h := HelloHandler{
-		clientTransport: &http.Transport{
-			TLSClientConfig: openTlsConfig(),
-		},
-		jwtStaff: openJwtStaff(),
+		tlsClientConfig: openTlsConfig(),
+		jwtStaff:        openJwtStaff(),
 		requestCount: prometheus.NewCounter(
 			prometheus.CounterOpts{
 				Name: "request_cnt",
