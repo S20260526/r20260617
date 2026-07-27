@@ -124,7 +124,7 @@ func (h *HelloHandler) dial(hostPort string) error {
 	return e
 }
 
-func (h *HelloHandler) relay(tag, hostPort string) chan string {
+func (h *HelloHandler) relay(hostPort string) chan string {
 	ch := make(chan string)
 
 	go func() {
@@ -138,21 +138,21 @@ func (h *HelloHandler) relay(tag, hostPort string) chan string {
 		r, e := cl.Get("https://" + hostPort)
 
 		if e != nil {
-			slog.Info(tag, "error", e)
+			slog.Info(hostPort, "error", e)
 			return
 		}
 
 		defer r.Body.Close()
 
 		if r.StatusCode != 200 {
-			slog.Info(tag, "status", r.StatusCode)
+			slog.Info(hostPort, "status", r.StatusCode)
 			return
 		}
 
 		b, e := io.ReadAll(r.Body)
 
 		if e != nil {
-			slog.Info(tag, "read error", e)
+			slog.Info(hostPort, "read error", e)
 			return
 		}
 
@@ -245,8 +245,8 @@ func (h *HelloHandler) verifyToken(t string) bool {
 }
 
 func (h *HelloHandler) tokenAccepted(c echo.Context) error {
-	helloCh := h.relay("hello", HelloHostPort)
-	worldCh := h.relay("world", WorldHostPort)
+	helloCh := h.relay(HelloHostPort)
+	worldCh := h.relay(WorldHostPort)
 
 	hello := <-helloCh
 	world := <-worldCh
