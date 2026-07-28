@@ -26,6 +26,8 @@ func StartGrpcServer(h Handler) error {
 		return e
 	}
 
+	tc.NextProtos = []string{"h2"}
+
 	c8n, e := tls.Listen("tcp", ":8081", tc)
 
 	if e != nil {
