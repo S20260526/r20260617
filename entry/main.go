@@ -41,9 +41,12 @@ type Backend struct {
 }
 
 func (b *Backend) openGrpc(tc *tls.Config) {
+	tccp := *tc
+	tccp.NextProtos = []string{"h2"}
+
 	c8n, e := grpc.NewClient(
 		b.grpcHostPort(),
-		grpc.WithTransportCredentials(grpccred.NewTLS(tc)),
+		grpc.WithTransportCredentials(grpccred.NewTLS(&tccp)),
 	)
 
 	panicIf(e)
