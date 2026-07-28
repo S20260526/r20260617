@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/tls"
 	"errors"
@@ -171,7 +172,7 @@ func (h *HelloHandler) ping(b *Backend) error {
 	return e
 }
 
-func (h *HelloHandler) relay(b *Backend) chan string {
+func (h *HelloHandler) httpRelay(b *Backend) chan string {
 	ch := make(chan string)
 
 	go func() {
@@ -187,25 +188,50 @@ func (h *HelloHandler) relay(b *Backend) chan string {
 		r, e := cl.Get(b.restUrl())
 
 		if e != nil {
-			slog.Info("relay", "host", b.host, "error", e)
+			slog.Info("HTTP relay", "host", b.host, "error", e)
 			return
 		}
 
 		defer r.Body.Close()
 
 		if r.StatusCode != 200 {
-			slog.Info("relay", "host", b.host, "status", r.StatusCode)
+			slog.Info("HTTP relay", "host", b.host, "status", r.StatusCode)
 			return
 		}
 
 		term, e := io.ReadAll(r.Body)
 
 		if e != nil {
-			slog.Info("relay", "host", b.host, "read error", e)
+			slog.Info("HTTP relay", "host", b.host, "read error", e)
 			return
 		}
 
 		ch <- string(term)
+	}()
+
+	return ch
+}
+
+func (h *HelloHandler) grpcRelay(b *Backend) chan string {
+	ch := make(chan string)
+
+	go func() {
+		defer close(ch)
+
+		ctx, cncl := context.WithTimeout(
+			context.Background(), time.Second * 5,
+		)
+
+		defer cncl()
+
+		rsps, e := b.grpc.Get(ctx, &ft.Rqst{})
+
+		if e != nil {
+			slog.Info("gRPC relay", "host", b.host, "error", e)
+			return
+		}
+
+		ch <- rsps.Message
 	}()
 
 	return ch
@@ -309,17 +335,27 @@ func (h *HelloHandler) verifyToken(t string) bool {
 }
 
 func (h *HelloHandler) tokenAccepted(c echo.Context) error {
-	helloCh := h.relay(HelloBackend)
-	worldCh := h.relay(WorldBackend)
+	var hCh, wCh chan string
 
-	hello := <-helloCh
-	world := <-worldCh
+	switch c.Path() {
+	case "/rest":
+		hCh = h.httpRelay(HelloBackend)
+		wCh = h.httpRelay(WorldBackend)
+	case "/grpc":
+		hCh = h.grpcRelay(HelloBackend)
+		wCh = h.grpcRelay(WorldBackend)
+	default:
+		return c.NoContent(http.StatusNotFound)
+	}
 
-	if hello == "" || world == "" {
+	hl := <-hCh
+	wr := <-wCh
+
+	if hl == "" || wr == "" {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	return c.String(http.StatusOK, fmt.Sprintf("%s, %s!", hello, world))
+	return c.String(http.StatusOK, fmt.Sprintf("%s, %s!", hl, wr))
 }
 
 // @title			Hello world entry API
