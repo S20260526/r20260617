@@ -40,13 +40,13 @@ type Backend struct {
 	grpc ft.ServiceClient
 }
 
-func (b *Backend) openGrpc(tc *tls.Config) {
-	tccp := *tc
-	tccp.NextProtos = []string{"h2"}
+func (b *Backend) openGrpc() {
+	tc := openTlsConfig()
+	tc.NextProtos = []string{"h2"}
 
 	c8n, e := grpc.NewClient(
 		b.grpcHostPort(),
-		grpc.WithTransportCredentials(grpccred.NewTLS(&tccp)),
+		grpc.WithTransportCredentials(grpccred.NewTLS(tc)),
 	)
 
 	panicIf(e)
@@ -459,8 +459,8 @@ func main() {
 	e.GET("/rest", h.Rest)
 	e.GET("/grpc", h.Grpc)
 
-	HelloBackend.openGrpc(openTlsConfig())
-	WorldBackend.openGrpc(openTlsConfig())
+	HelloBackend.openGrpc()
+	WorldBackend.openGrpc()
 
 	slog.Info("server", "state", "starting")
 
