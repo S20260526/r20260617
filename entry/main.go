@@ -14,6 +14,8 @@ import (
 
 	"infra"
 
+	ft "fubotorp"
+
 	_ "m20260618-entry/docs"
 
 	"github.com/labstack/echo/v4"
@@ -24,29 +26,54 @@ import (
 	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/golang-jwt/jwt/v5"
+
+	grpc "google.golang.org/grpc"
+	grpccred "google.golang.org/grpc/credentials"
 )
 
 type Backend struct {
-	host string
-	port int
+	host     string
+	httpPort int
+	grpcPort int
+
+	grpc ft.ServiceClient
 }
 
-func (b *Backend) hostPort() string {
-	return fmt.Sprintf("%s:%d", b.host, b.port)
+func (b *Backend) openGrpc(tc *tls.Config) {
+	c8n, e := grpc.NewClient(
+		b.grpcHostPort(),
+		grpc.WithTransportCredentials(grpccred.NewTLS(tc)),
+	)
+
+	panicIf(e)
+
+	b.grpc = ft.NewServiceClient(c8n)
+}
+
+func (b *Backend) httpHostPort() string {
+	return fmt.Sprintf("%s:%d", b.host, b.httpPort)
+}
+
+func (b *Backend) grpcHostPort() string {
+	return fmt.Sprintf("%s:%d", b.host, b.grpcPort)
 }
 
 func (b *Backend) restUrl() string {
-	return fmt.Sprintf("https://%s:%d", b.host, b.port)
+	return fmt.Sprintf("https://%s:%d", b.host, b.httpPort)
 }
 
 var HelloBackend = &Backend{
-	host: "hello",
-	port: 8080,
+	host:     "hello",
+	httpPort: 8080,
+	grpcPort: 8081,
+	grpc:     nil,
 }
 
 var WorldBackend = &Backend{
-	host: "world",
-	port: 8080,
+	host:     "world",
+	httpPort: 8080,
+	grpcPort: 8081,
+	grpc:     nil,
 }
 
 type JwtStaff struct {
@@ -132,13 +159,13 @@ func openTlsConfig() *tls.Config {
 	return tc
 }
 
-func (h *HelloHandler) dial(b *Backend) error {
-	c, e := tls.Dial("tcp", b.hostPort(), h.tlsClientConfig)
+func (h *HelloHandler) ping(b *Backend) error {
+	c, e := tls.Dial("tcp", b.httpHostPort(), h.tlsClientConfig)
 
 	if e == nil {
 		defer c.Close()
 	} else {
-		slog.Info("dial", "TLS error", e)
+		slog.Info("ping", "TLS error", e)
 	}
 
 	return e
@@ -188,15 +215,15 @@ func (h *HelloHandler) Status(c echo.Context) error {
 	hl := "ok"
 	w := "ok"
 
-	if h.dial(HelloBackend) != nil {
-		hl = "err"
+	if e := h.ping(HelloBackend); e != nil {
+		hl = e.Error()
 	}
 
-	if h.dial(WorldBackend) != nil {
-		w = "err"
+	if e := h.ping(WorldBackend); e != nil {
+		w = e.Error()
 	}
 
-	e := h.statusHtml.Execute(
+	if e := h.statusHtml.Execute(
 		c.Response().Writer,
 		struct {
 			Hello, World string
@@ -204,9 +231,7 @@ func (h *HelloHandler) Status(c echo.Context) error {
 			Hello: hl,
 			World: w,
 		},
-	)
-
-	if e != nil {
+	); e != nil {
 		slog.Info("status", "error", e)
 	}
 
@@ -337,10 +362,8 @@ func main() {
 			  {{ define "statusBlock" }}
 			    {{ if eq . "ok" }}
 			      <p style="color: green;">Online</p>
-			    {{ else if eq . "err" }}
-			      <p style="color: red;">Offline</p>
 			    {{ else }}
-			      <p>N/A</p>
+			      <p style="color: red;">Offline</p>
 			    {{ end }}
 			  {{ end }}
 			  <!DOCTYPE html>
@@ -353,8 +376,10 @@ func main() {
 			        <h1>Status</h1>
 				<h2>Hello:</h2>
 				{{ template "statusBlock" .Hello }}
+				<p>{{ .Hello }}</p>
 				<h2>World:</h2>
 				{{ template "statusBlock" .World }}
+				<p>{{ .World }}</p>
 			      </body>
 			    </html>
 			`),
@@ -394,6 +419,9 @@ func main() {
 
 	e.GET("/rest", h.Rest)
 	e.GET("/grpc", h.Grpc)
+
+	HelloBackend.openGrpc(openTlsConfig())
+	WorldBackend.openGrpc(openTlsConfig())
 
 	slog.Info("server", "state", "starting")
 
