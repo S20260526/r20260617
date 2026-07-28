@@ -219,7 +219,7 @@ func (h *HelloHandler) grpcRelay(b *Backend) chan string {
 		defer close(ch)
 
 		ctx, cncl := context.WithTimeout(
-			context.Background(), time.Second * 5,
+			context.Background(), time.Second*5,
 		)
 
 		defer cncl()
