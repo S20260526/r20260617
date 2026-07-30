@@ -53,3 +53,7 @@ hey -z 30s -H "X-Token: $X_TOKEN" https://entry:8080/grpc
 ![grpc performance](screenshots/grpc-performance.png)
 
 Видно, что, как и следовало ожидать, gRPC обеспечивает значительно меньшую и стабильную задержку обработки, и, следовательно, большее число обслуженных запросов.
+
+UPD в случае повторного использования клиента HTTP производительность несколько увеличивается
+
+![rest performance improved](screenshots/rest-performance-improved.png)
