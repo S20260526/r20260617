@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/tls"
 	"errors"
 	"fmt"
+	html "html/template"
 	"io"
 	"log/slog"
 	"net/http"
@@ -13,12 +15,67 @@ import (
 
 	"infra"
 
+	ft "fubotorp"
+
+	_ "m20260618-entry/docs"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/golang-jwt/jwt/v5"
+
+	grpc "google.golang.org/grpc"
+	grpccred "google.golang.org/grpc/credentials"
 )
+
+type Backend struct {
+	host     string
+	httpPort int
+	grpcPort int
+
+	grpc ft.ServiceClient
+}
+
+func (b *Backend) openGrpc(tc *tls.Config) {
+	c8n, e := grpc.NewClient(
+		b.grpcHostPort(),
+		grpc.WithTransportCredentials(grpccred.NewTLS(tc)),
+	)
+
+	panicIf(e)
+
+	b.grpc = ft.NewServiceClient(c8n)
+}
+
+func (b *Backend) httpHostPort() string {
+	return fmt.Sprintf("%s:%d", b.host, b.httpPort)
+}
+
+func (b *Backend) grpcHostPort() string {
+	return fmt.Sprintf("%s:%d", b.host, b.grpcPort)
+}
+
+func (b *Backend) restUrl() string {
+	return fmt.Sprintf("https://%s:%d", b.host, b.httpPort)
+}
+
+var HelloBackend = &Backend{
+	host:     "hello",
+	httpPort: 8080,
+	grpcPort: 8081,
+	grpc:     nil,
+}
+
+var WorldBackend = &Backend{
+	host:     "world",
+	httpPort: 8080,
+	grpcPort: 8081,
+	grpc:     nil,
+}
 
 type JwtStaff struct {
 	privKey *rsa.PrivateKey
@@ -53,11 +110,11 @@ func (jws *JwtStaff) VerifyToken(t string) error {
 	return e
 }
 
-type EntryHandler struct {
-	transport                 *http.Transport
-	jwtStaff                  *JwtStaff
-	requestCount, hcheckCount prometheus.Counter
-	promHttpHandler           http.Handler
+type HelloHandler struct {
+	tlsClientConfig *tls.Config
+	jwtStaff        *JwtStaff
+	requestCount    prometheus.Counter
+	statusHtml      *html.Template
 }
 
 func panicIf(e error) {
@@ -103,55 +160,139 @@ func openTlsConfig() *tls.Config {
 	return tc
 }
 
-func (h *EntryHandler) relay(tag, url string) chan string {
+func (h *HelloHandler) ping(b *Backend) error {
+	c, e := tls.Dial("tcp", b.httpHostPort(), h.tlsClientConfig)
+
+	if e == nil {
+		defer c.Close()
+	} else {
+		slog.Info("ping", "TLS error", e)
+	}
+
+	return e
+}
+
+func (h *HelloHandler) httpRelay(b *Backend) chan string {
 	ch := make(chan string)
 
 	go func() {
 		defer close(ch)
 
 		cl := http.Client{
-			Transport: h.transport,
-			Timeout:   5 * time.Second,
+			Transport: &http.Transport{
+				TLSClientConfig: h.tlsClientConfig,
+			},
+			Timeout: 5 * time.Second,
 		}
 
-		r, e := cl.Get(url)
+		r, e := cl.Get(b.restUrl())
 
 		if e != nil {
-			slog.Info(tag, "error", e)
+			slog.Info("HTTP relay", "host", b.host, "error", e)
 			return
 		}
 
 		defer r.Body.Close()
 
 		if r.StatusCode != 200 {
-			slog.Info(tag, "status", r.StatusCode)
+			slog.Info("HTTP relay", "host", b.host, "status", r.StatusCode)
 			return
 		}
 
-		b, e := io.ReadAll(r.Body)
+		term, e := io.ReadAll(r.Body)
 
 		if e != nil {
-			slog.Info(tag, "read error", e)
+			slog.Info("HTTP relay", "host", b.host, "read error", e)
 			return
 		}
 
-		ch <- string(b)
+		ch <- string(term)
 	}()
 
 	return ch
 }
 
-func (h *EntryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.RequestURI == "/hcheck" {
-		h.hcheckCount.Inc()
-	} else if r.RequestURI == "/prometrics" {
-		h.promHttpHandler.ServeHTTP(w, r)
-	} else {
-		h.requestHandler(w, r)
-	}
+func (h *HelloHandler) grpcRelay(b *Backend) chan string {
+	ch := make(chan string)
+
+	go func() {
+		defer close(ch)
+
+		ctx, cncl := context.WithTimeout(
+			context.Background(), time.Second*5,
+		)
+
+		defer cncl()
+
+		rsps, e := b.grpc.Get(ctx, &ft.Rqst{})
+
+		if e != nil {
+			slog.Info("gRPC relay", "host", b.host, "error", e)
+			return
+		}
+
+		ch <- rsps.Message
+	}()
+
+	return ch
 }
 
-func (h *EntryHandler) requestHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HelloHandler) Status(c echo.Context) error {
+	hl := "ok"
+	w := "ok"
+
+	if e := h.ping(HelloBackend); e != nil {
+		hl = e.Error()
+	}
+
+	if e := h.ping(WorldBackend); e != nil {
+		w = e.Error()
+	}
+
+	if e := h.statusHtml.Execute(
+		c.Response().Writer,
+		struct {
+			Hello, World string
+		}{
+			Hello: hl,
+			World: w,
+		},
+	); e != nil {
+		slog.Info("status", "error", e)
+	}
+
+	return nil
+}
+
+// @Summary		greeting
+// @Description	return simple greeting via RESTfull backend API
+// @Tags			hello
+// @Produce		text/plain
+// @Param			X-Token	header		string	false	"JWT access token"
+// @Success		200		{string}	string
+// @Failure		403
+// @Failure		500
+// @Router			/rest [get]
+func (h *HelloHandler) Rest(c echo.Context) error {
+	return h.handle(c)
+}
+
+// @Summary		greeting
+// @Description	return simple greeting via gRPC backend API
+// @Tags			hello
+// @Produce		text/plain
+// @Param			X-Token	header		string	false	"JWT access token"
+// @Success		200		{string}	string
+// @Failure		403
+// @Failure		500
+// @Router			/grpc [get]
+func (h *HelloHandler) Grpc(c echo.Context) error {
+	return h.handle(c)
+}
+
+func (h *HelloHandler) handle(c echo.Context) error {
+	r := c.Request()
+
 	slog.Info("request", "from", r.RemoteAddr, "to", r.Host, "URI", r.RequestURI)
 
 	h.requestCount.Inc()
@@ -159,30 +300,29 @@ func (h *EntryHandler) requestHandler(w http.ResponseWriter, r *http.Request) {
 	t := r.Header.Get("X-Token")
 
 	if t == "" {
-		h.noToken(w, r)
+		return h.noToken(c)
 	} else if !h.verifyToken(t) {
-		w.WriteHeader(http.StatusForbidden)
+		return c.NoContent(http.StatusForbidden)
 	} else {
-		h.tokenAccepted(w, r)
+		return h.tokenAccepted(c)
 	}
 }
 
-func (h *EntryHandler) noToken(w http.ResponseWriter, r *http.Request) {
+func (h *HelloHandler) noToken(c echo.Context) error {
 	t, e := h.jwtStaff.NewToken()
 
 	if e != nil {
 		slog.Info("JWT", "token", e)
 
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	slog.Info("JWT", "token", "created")
 
-	w.Write([]byte(t))
+	return c.String(http.StatusOK, t)
 }
 
-func (h *EntryHandler) verifyToken(t string) bool {
+func (h *HelloHandler) verifyToken(t string) bool {
 	e := h.jwtStaff.VerifyToken(t)
 
 	if e != nil {
@@ -194,21 +334,37 @@ func (h *EntryHandler) verifyToken(t string) bool {
 	return true
 }
 
-func (h *EntryHandler) tokenAccepted(w http.ResponseWriter, r *http.Request) {
-	helloCh := h.relay("hello", "https://hello:8080")
-	worldCh := h.relay("world", "https://world:8080")
+func (h *HelloHandler) tokenAccepted(c echo.Context) error {
+	var hCh, wCh chan string
 
-	hello := <-helloCh
-	world := <-worldCh
-
-	if hello == "" || world == "" {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	switch c.Path() {
+	case "/rest":
+		hCh = h.httpRelay(HelloBackend)
+		wCh = h.httpRelay(WorldBackend)
+	case "/grpc":
+		hCh = h.grpcRelay(HelloBackend)
+		wCh = h.grpcRelay(WorldBackend)
+	default:
+		return c.NoContent(http.StatusNotFound)
 	}
 
-	w.Write([]byte(fmt.Sprintf("%s, %s!", hello, world)))
+	hl := <-hCh
+	wr := <-wCh
+
+	if hl == "" || wr == "" {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.String(http.StatusOK, fmt.Sprintf("%s, %s!", hl, wr))
 }
 
+// @title			Hello world entry API
+// @version		1.0
+// @description	Hello world entry point
+// @contact.name	A.U.Thor
+// @contact.email	dont.spam.me@example.com
+// @license.name	GNU
+// @BasePath		/
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, nil)))
 
@@ -219,35 +375,93 @@ func main() {
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 	)
 
-	h := EntryHandler{
-		transport: &http.Transport{
-			TLSClientConfig: openTlsConfig(),
+	hcheckCount := prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "hcheck_cnt",
+			Help: "Healthcheck request counter",
 		},
-		jwtStaff: openJwtStaff(),
+	)
+
+	pr.MustRegister(hcheckCount)
+
+	tc := openTlsConfig()
+
+	h := HelloHandler{
+		tlsClientConfig: tc,
+		jwtStaff:        openJwtStaff(),
 		requestCount: prometheus.NewCounter(
 			prometheus.CounterOpts{
 				Name: "request_cnt",
 				Help: "Hello, world! request counter",
 			},
 		),
-		hcheckCount: prometheus.NewCounter(
-			prometheus.CounterOpts{
-				Name: "hcheck_cnt",
-				Help: "Healthcheck request counter",
-			},
+		statusHtml: html.Must(
+			html.New("status").Parse(`
+			  {{ define "statusBlock" }}
+			    {{ if eq . "ok" }}
+			      <p style="color: green;">Online</p>
+			    {{ else }}
+			      <p style="color: red;">Offline</p>
+			    {{ end }}
+			  {{ end }}
+			  <!DOCTYPE html>
+			    <html>
+			      <head>
+			        <meta charset="latin-1">
+			        <title>Status</title>
+			      </head>
+			      <body>
+			        <h1>Status</h1>
+				<h2>Hello:</h2>
+				{{ template "statusBlock" .Hello }}
+				<p>{{ .Hello }}</p>
+				<h2>World:</h2>
+				{{ template "statusBlock" .World }}
+				<p>{{ .World }}</p>
+			      </body>
+			    </html>
+			`),
 		),
-		promHttpHandler: promhttp.HandlerFor(pr, promhttp.HandlerOpts{Registry: pr}),
 	}
 
 	pr.MustRegister(h.requestCount)
-	pr.MustRegister(h.hcheckCount)
 
-	s := http.Server{
-		Addr:    ":8080",
-		Handler: &h,
-	}
+	e := echo.New()
 
-	slog.Info("server", "state", "started")
+	e.HideBanner = true
+	e.HidePort = true
 
-	panicIf(s.ListenAndServe())
+	e.Use(middleware.Recover())
+
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
+	e.GET(
+		"/swagit", func(c echo.Context) error {
+			return c.Redirect(
+				http.StatusMovedPermanently,
+				"/swagger/index.html",
+			)
+		},
+	)
+
+	e.GET(
+		"/hcheck", func(c echo.Context) error {
+			hcheckCount.Inc()
+
+			return c.NoContent(http.StatusOK)
+		},
+	)
+
+	e.GET("/prometrics", echo.WrapHandler(promhttp.Handler()))
+
+	e.GET("/status", h.Status)
+
+	e.GET("/rest", h.Rest)
+	e.GET("/grpc", h.Grpc)
+
+	HelloBackend.openGrpc(tc)
+	WorldBackend.openGrpc(tc)
+
+	slog.Info("server", "state", "starting")
+
+	panicIf(e.Start(":8080"))
 }

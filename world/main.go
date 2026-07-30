@@ -1,10 +1,9 @@
 package main
 
 import (
-	"crypto/tls"
 	"log/slog"
-	"net/http"
 	"os"
+	"sync"
 
 	"app"
 	"infra"
@@ -13,35 +12,27 @@ import (
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, nil)))
 
-	tc := &tls.Config{}
+	wg := sync.WaitGroup{}
 
-	var e error
+	wg.Add(2)
 
-	tc.Certificates, e = infra.ServerCertFromFile("server.crt", "server.key")
+	go func() {
+		e := infra.StartGrpcServer(infra.NewHandler(app.NewWorldService()))
 
-	if e != nil {
-		panic(e)
-	}
+		slog.Info("HTTP", "error", e)
 
-	tc.ClientCAs, e = infra.CaCertFromFile("ca.crt")
+		os.Exit(1)
+	}()
 
-	if e != nil {
-		panic(e)
-	}
+	go func() {
+		e := infra.StartMTLSServer(infra.NewHandler(app.NewWorldService()))
 
-	tc.ClientAuth = tls.RequireAndVerifyClientCert
+		slog.Info("gRPC", "error", e)
 
-	s := http.Server{
-		Addr:      ":8080",
-		Handler:   infra.NewHandler(app.NewWorldService()),
-		TLSConfig: tc,
-	}
+		os.Exit(1)
+	}()
 
-	slog.Info("world", "state", "started")
+	wg.Wait()
 
-	e = s.ListenAndServeTLS("", "")
-
-	if e != nil {
-		panic(e)
-	}
+	os.Exit(1)
 }

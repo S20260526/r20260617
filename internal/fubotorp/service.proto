@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "internal/fubotorp/message.proto";
+
+package fubotorp;
+
+option go_package = "internal/fubotorp";
+
+service Service {
+  rpc Get (Rqst) returns (Rsps);
+}

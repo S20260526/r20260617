@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package fubotorp;
+
+option go_package = "internal/fubotorp";
+
+message Rqst {
+}
+
+message Rsps {
+  string message = 1;
+}

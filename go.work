@@ -1,11 +1,14 @@
-go 1.24
+go 1.24.0
+
+toolchain go1.24.4
 
 use (
 	./entry
 	./hcheck
 	./hello
-	./world
 	./internal/app
 	./internal/domain
+	./internal/fubotorp
 	./internal/infra
+	./world
 )
