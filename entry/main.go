@@ -40,10 +40,10 @@ type Backend struct {
 	grpc ft.ServiceClient
 }
 
-func (b *Backend) openGrpc() {
+func (b *Backend) openGrpc(tc *tls.Config) {
 	c8n, e := grpc.NewClient(
 		b.grpcHostPort(),
-		grpc.WithTransportCredentials(grpccred.NewTLS(openTlsConfig())),
+		grpc.WithTransportCredentials(grpccred.NewTLS(tc)),
 	)
 
 	panicIf(e)
@@ -384,8 +384,10 @@ func main() {
 
 	pr.MustRegister(hcheckCount)
 
+	tc := openTlsConfig()
+
 	h := HelloHandler{
-		tlsClientConfig: openTlsConfig(),
+		tlsClientConfig: tc,
 		jwtStaff:        openJwtStaff(),
 		requestCount: prometheus.NewCounter(
 			prometheus.CounterOpts{
@@ -456,8 +458,8 @@ func main() {
 	e.GET("/rest", h.Rest)
 	e.GET("/grpc", h.Grpc)
 
-	HelloBackend.openGrpc()
-	WorldBackend.openGrpc()
+	HelloBackend.openGrpc(tc)
+	WorldBackend.openGrpc(tc)
 
 	slog.Info("server", "state", "starting")
 
