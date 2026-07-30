@@ -37,7 +37,15 @@ type Backend struct {
 	httpPort int
 	grpcPort int
 
+	rest http.Client
 	grpc ft.ServiceClient
+}
+
+func (b *Backend) openRest(tc *tls.Config) {
+	b.rest = http.Client{
+		Transport: &http.Transport{TLSClientConfig: tc},
+		Timeout:   5 * time.Second,
+	}
 }
 
 func (b *Backend) openGrpc(tc *tls.Config) {
@@ -178,12 +186,7 @@ func (h *HelloHandler) httpRelay(b *Backend) chan string {
 	go func() {
 		defer close(ch)
 
-		cl := http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: h.tlsClientConfig,
-			},
-			Timeout: 5 * time.Second,
-		}
+		cl := b.rest
 
 		r, e := cl.Get(b.restUrl())
 
@@ -457,6 +460,9 @@ func main() {
 
 	e.GET("/rest", h.Rest)
 	e.GET("/grpc", h.Grpc)
+
+	HelloBackend.openRest(tc)
+	WorldBackend.openRest(tc)
 
 	HelloBackend.openGrpc(tc)
 	WorldBackend.openGrpc(tc)
