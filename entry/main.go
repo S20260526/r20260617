@@ -454,7 +454,7 @@ func main() {
 		},
 	)
 
-	e.GET("/prometrics", echo.WrapHandler(promhttp.Handler()))
+	e.GET("/prometrics", echo.WrapHandler(promhttp.HandlerFor(pr, promhttp.HandlerOpts{})))
 
 	e.GET("/status", h.Status)
 
