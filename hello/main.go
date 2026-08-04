@@ -19,7 +19,7 @@ func main() {
 	go func() {
 		e := infra.StartGrpcServer(infra.NewHandler(app.NewHelloService()))
 
-		slog.Info("HTTP", "error", e)
+		slog.Info("gRPC", "error", e)
 
 		os.Exit(1)
 	}()
@@ -27,7 +27,7 @@ func main() {
 	go func() {
 		e := infra.StartMTLSServer(infra.NewHandler(app.NewHelloService()))
 
-		slog.Info("gRPC", "error", e)
+		slog.Info("HTTP", "error", e)
 
 		os.Exit(1)
 	}()
