@@ -57,7 +57,7 @@ const docTemplate = `{
         },
         "/rest": {
             "get": {
-                "description": "return simple greeting via RESTfull backend API",
+                "description": "return simple greeting via RESTful backend API",
                 "produces": [
                     "text/plain"
                 ],

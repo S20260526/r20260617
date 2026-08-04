@@ -268,7 +268,7 @@ func (h *HelloHandler) Status(c echo.Context) error {
 }
 
 // @Summary		greeting
-// @Description	return simple greeting via RESTfull backend API
+// @Description	return simple greeting via RESTful backend API
 // @Tags			hello
 // @Produce		text/plain
 // @Param			X-Token	header		string	false	"JWT access token"
