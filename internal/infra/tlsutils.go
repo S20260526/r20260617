@@ -15,6 +15,8 @@ func CaCertFromFile(certFile string) (*x509.CertPool, error) {
 		return nil, e
 	}
 
+	defer f.Close()
+
 	b, e := io.ReadAll(f)
 
 	if e != nil {
