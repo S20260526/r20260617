@@ -3,6 +3,8 @@ name: testbench
 services:
   entry1:
     image: ghcr.io/s20260526/m20260618-entry:latest
+    depends_on:
+      - config
     volumes:
       - ./ssl/ca.crt:/ca.crt
       - ./ssl/jwt.key:/jwt.key
@@ -12,6 +14,8 @@ services:
 
   entry2:
     image: ghcr.io/s20260526/m20260618-entry:latest
+    depends_on:
+      - config
     volumes:
       - ./ssl/ca.crt:/ca.crt
       - ./ssl/jwt.key:/jwt.key
@@ -21,6 +25,8 @@ services:
 
   hello:
     image: ghcr.io/s20260526/m20260618-hello:latest
+    depends_on:
+      - config
     volumes:
       - ./ssl/ca.crt:/ca.crt
       - ./ssl/hello.crt:/server.crt
@@ -28,6 +34,8 @@ services:
 
   world:
     image: ghcr.io/s20260526/m20260618-world:latest
+    depends_on:
+      - config
     volumes:
       - ./ssl/ca.crt:/ca.crt
       - ./ssl/world.crt:/server.crt
