@@ -12,8 +12,10 @@ func StartMTLSServer(h Handler) error {
 		return e
 	}
 
+	port := Config.Get("mtlsport", ":8080")
+
 	s := http.Server{
-		Addr:      ":8080",
+		Addr:      port,
 		Handler:   h,
 		TLSConfig: tc,
 	}
