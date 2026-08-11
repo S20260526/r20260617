@@ -34,14 +34,15 @@ import (
 
 type Backend struct {
 	host     string
-	httpPort int
-	grpcPort int
+	httpPort string
+	grpcPort string
 
 	rest http.Client
 	grpc ft.ServiceClient
 }
 
 func (b *Backend) openRest(tc *tls.Config) {
+	b.httpPort = infra.Config.Get("mtlsport", "8080")
 	b.rest = http.Client{
 		Transport: &http.Transport{TLSClientConfig: tc},
 		Timeout:   5 * time.Second,
@@ -49,6 +50,7 @@ func (b *Backend) openRest(tc *tls.Config) {
 }
 
 func (b *Backend) openGrpc(tc *tls.Config) {
+	b.grpcPort = infra.Config.Get("grpcport", "8081")
 	c8n, e := grpc.NewClient(
 		b.grpcHostPort(),
 		grpc.WithTransportCredentials(grpccred.NewTLS(tc)),
@@ -60,30 +62,27 @@ func (b *Backend) openGrpc(tc *tls.Config) {
 }
 
 func (b *Backend) httpHostPort() string {
-	return fmt.Sprintf("%s:%d", b.host, b.httpPort)
+	if b.httpPort == "" {
+		panic("HTTP port not yet set")
+	}
+
+	return fmt.Sprintf("%s:%s", b.host, b.httpPort)
 }
 
 func (b *Backend) grpcHostPort() string {
-	return fmt.Sprintf("%s:%d", b.host, b.grpcPort)
+	if b.grpcPort == "" {
+		panic("gRPC port not yet set")
+	}
+
+	return fmt.Sprintf("%s:%s", b.host, b.grpcPort)
 }
 
 func (b *Backend) restUrl() string {
-	return fmt.Sprintf("https://%s:%d", b.host, b.httpPort)
+	return fmt.Sprintf("https://%s", b.httpHostPort())
 }
 
-var HelloBackend = &Backend{
-	host:     "hello",
-	httpPort: 8080,
-	grpcPort: 8081,
-	grpc:     nil,
-}
-
-var WorldBackend = &Backend{
-	host:     "world",
-	httpPort: 8080,
-	grpcPort: 8081,
-	grpc:     nil,
-}
+var HelloBackend = &Backend{host: "hello"}
+var WorldBackend = &Backend{host: "world"}
 
 type JwtStaff struct {
 	privKey *rsa.PrivateKey
