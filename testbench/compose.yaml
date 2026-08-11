@@ -43,10 +43,13 @@ services:
 
   config:
     image: gcr.io/etcd-development/etcd:v3.7.1
+    volumes:
+      - etcd-data:/etcd-data
     command:
       - /usr/local/bin/etcd
       - --listen-client-urls=http://0.0.0.0:2379
       - --advertise-client-urls=http://127.0.0.1:2379
+      - --data-dir=/etcd-data
 
   h:
     image: haproxy:3.0
@@ -134,3 +137,4 @@ volumes:
   fluent-bit-state:
   prometheus_data:
   grafana-data:
+  etcd-data:
