@@ -30,7 +30,7 @@ func StartGrpcServer(h Handler) error {
 
 	port := Config.Get("grpcport", "8081")
 
-	c8n, e := tls.Listen("tcp", ":" + port, tc)
+	c8n, e := tls.Listen("tcp", ":"+port, tc)
 
 	if e != nil {
 		return e
