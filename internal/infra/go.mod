@@ -5,6 +5,7 @@ go 1.24.0
 toolchain go1.24.4
 
 require (
+	github.com/valkey-io/valkey-go v1.0.69
 	go.etcd.io/etcd/client/v3 v3.6.8
 	google.golang.org/grpc v1.79.1
 )
