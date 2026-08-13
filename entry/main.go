@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"infra"
@@ -30,6 +31,9 @@ import (
 
 	grpc "google.golang.org/grpc"
 	grpccred "google.golang.org/grpc/credentials"
+
+	vlkg "github.com/valkey-io/valkey-go"
+	vlkl "github.com/valkey-io/valkey-go/valkeylimiter"
 )
 
 type Backend struct {
@@ -360,6 +364,49 @@ func (h *HelloHandler) tokenAccepted(c echo.Context) error {
 	return c.String(http.StatusOK, fmt.Sprintf("%s, %s!", hl, wr))
 }
 
+func NewRateLimiterMiddleware() echo.MiddlewareFunc {
+	lmtr, e := vlkl.NewRateLimiter(
+		vlkl.RateLimiterOption{
+			ClientOption: vlkg.ClientOption{
+				InitAddress: []string{
+					infra.Config.Get(
+						"valkeyhostport", "valkey:6379",
+					),
+				},
+			},
+			KeyPrefix: "rate_limiter",
+			Limit:     1,
+			Window:    5 * time.Second,
+		},
+	)
+
+	if e != nil {
+		slog.Info("rate limiter", "create error", e)
+		lmtr = nil
+	}
+
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			switch strings.ToLower(infra.Config.Get("ratelimit", "off")) {
+			case "on", "yes", "true", "enable", "enabled":
+				if lmtr != nil {
+					ctx := c.Request().Context()
+
+					r, e := lmtr.Allow(ctx, "LMTR")
+
+					if e != nil {
+						slog.Info("rate limiter", "runtime error", e)
+					} else if !r.Allowed {
+						return c.NoContent(http.StatusTooManyRequests)
+					}
+				}
+			}
+
+			return next(c)
+		}
+	}
+}
+
 // @title			Hello world entry API
 // @version		1.0
 // @description	Hello world entry point
@@ -435,30 +482,32 @@ func main() {
 
 	e.Use(middleware.Recover())
 
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
+	limitIt := NewRateLimiterMiddleware()
+
+	e.GET("/swagger/*", limitIt(echoSwagger.WrapHandler))
 	e.GET(
-		"/swagit", func(c echo.Context) error {
+		"/swagit", limitIt(func(c echo.Context) error {
 			return c.Redirect(
 				http.StatusMovedPermanently,
 				"/swagger/index.html",
 			)
-		},
+		}),
 	)
 
 	e.GET(
-		"/hcheck", func(c echo.Context) error {
+		"/hcheck", limitIt(func(c echo.Context) error {
 			hcheckCount.Inc()
 
 			return c.NoContent(http.StatusOK)
-		},
+		}),
 	)
 
 	e.GET("/prometrics", echo.WrapHandler(promhttp.HandlerFor(pr, promhttp.HandlerOpts{})))
 
-	e.GET("/status", h.Status)
+	e.GET("/status", limitIt(h.Status))
 
-	e.GET("/rest", h.Rest)
-	e.GET("/grpc", h.Grpc)
+	e.GET("/rest", limitIt(h.Rest))
+	e.GET("/grpc", limitIt(h.Grpc))
 
 	HelloBackend.openRest(tc)
 	WorldBackend.openRest(tc)
