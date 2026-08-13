@@ -325,6 +325,7 @@ func (h *HelloHandler) Status(c echo.Context) error {
 // @Param			X-Token	header		string	false	"JWT access token"
 // @Success		200		{string}	string
 // @Failure		403
+// @Failure		429
 // @Failure		500
 // @Router			/rest [get]
 func (h *HelloHandler) Rest(c echo.Context) error {
@@ -338,6 +339,7 @@ func (h *HelloHandler) Rest(c echo.Context) error {
 // @Param			X-Token	header		string	false	"JWT access token"
 // @Success		200		{string}	string
 // @Failure		403
+// @Failure		429
 // @Failure		500
 // @Router			/grpc [get]
 func (h *HelloHandler) Grpc(c echo.Context) error {

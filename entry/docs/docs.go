@@ -49,6 +49,9 @@ const docTemplate = `{
                     "403": {
                         "description": "Forbidden"
                     },
+                    "429": {
+                        "description": "Too Many Requests"
+                    },
                     "500": {
                         "description": "Internal Server Error"
                     }
@@ -82,6 +85,9 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden"
+                    },
+                    "429": {
+                        "description": "Too Many Requests"
                     },
                     "500": {
                         "description": "Internal Server Error"
