@@ -14,7 +14,13 @@ type HelloRepo struct {
 }
 
 func NewHelloRepo() (*HelloRepo, error) {
-	cli, e := vlk.NewClient(vlk.ClientOption{InitAddress: []string{"valkey:6379"}})
+	cli, e := vlk.NewClient(
+		vlk.ClientOption{
+			InitAddress: []string{
+				Config.Get("valkeyhostport", "valkey:6379"),
+			},
+		},
+	)
 
 	return &HelloRepo{
 		client: cli,
