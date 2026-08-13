@@ -174,7 +174,7 @@ func openTlsConfig() *tls.Config {
 
 func openRateLimiter() vlkl.RateLimiterClient {
 	switch strings.ToLower(infra.Config.Get("ratelimit", "off")) {
-	case "on", "yes", "true", "enable", "enabled":
+	case "off", "no", "false", "disable", "disabled":
 		return nil
 	}
 
