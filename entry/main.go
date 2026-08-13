@@ -126,6 +126,7 @@ type HelloHandler struct {
 	jwtStaff        *JwtStaff
 	requestCount    prometheus.Counter
 	statusHtml      *html.Template
+	rateLimiter     vlkl.RateLimiterClient
 }
 
 func panicIf(e error) {
@@ -169,6 +170,49 @@ func openTlsConfig() *tls.Config {
 	panicIf(e)
 
 	return tc
+}
+
+func openRateLimiter() vlkl.RateLimiterClient {
+	switch strings.ToLower(infra.Config.Get("ratelimit", "off")) {
+	case "on", "yes", "true", "enable", "enabled":
+		return nil
+	}
+
+	lmtr, e := vlkl.NewRateLimiter(
+		vlkl.RateLimiterOption{
+			ClientOption: vlkg.ClientOption{
+				InitAddress: []string{
+					infra.Config.Get(
+						"valkeyhostport", "valkey:6379",
+					),
+				},
+			},
+			KeyPrefix: "rate_limiter",
+			Limit:     1,
+			Window:    5 * time.Second,
+		},
+	)
+
+	if e != nil {
+		slog.Info("rate limiter", "create error", e)
+		lmtr = nil
+	}
+
+	return lmtr
+}
+
+func (h *HelloHandler) rateLimited(ctx context.Context, key string) bool {
+	if h.rateLimiter != nil {
+		r, e := h.rateLimiter.Allow(ctx, key)
+
+		if e != nil {
+			slog.Info("rate limiter", "runtime error", e)
+		} else {
+			return !r.Allowed
+		}
+	}
+
+	return false
 }
 
 func (h *HelloHandler) ping(b *Backend) error {
@@ -244,6 +288,10 @@ func (h *HelloHandler) grpcRelay(b *Backend) chan string {
 }
 
 func (h *HelloHandler) Status(c echo.Context) error {
+	if h.rateLimited(c.Request().Context(), "status") {
+		return c.NoContent(http.StatusTooManyRequests)
+	}
+
 	hl := "ok"
 	w := "ok"
 
@@ -315,6 +363,10 @@ func (h *HelloHandler) handle(c echo.Context) error {
 }
 
 func (h *HelloHandler) noToken(c echo.Context) error {
+	if h.rateLimited(c.Request().Context(), "newtoken") {
+		return c.NoContent(http.StatusTooManyRequests)
+	}
+
 	t, e := h.jwtStaff.NewToken()
 
 	if e != nil {
@@ -362,49 +414,6 @@ func (h *HelloHandler) tokenAccepted(c echo.Context) error {
 	}
 
 	return c.String(http.StatusOK, fmt.Sprintf("%s, %s!", hl, wr))
-}
-
-func NewRateLimiterMiddleware() echo.MiddlewareFunc {
-	lmtr, e := vlkl.NewRateLimiter(
-		vlkl.RateLimiterOption{
-			ClientOption: vlkg.ClientOption{
-				InitAddress: []string{
-					infra.Config.Get(
-						"valkeyhostport", "valkey:6379",
-					),
-				},
-			},
-			KeyPrefix: "rate_limiter",
-			Limit:     1,
-			Window:    5 * time.Second,
-		},
-	)
-
-	if e != nil {
-		slog.Info("rate limiter", "create error", e)
-		lmtr = nil
-	}
-
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			switch strings.ToLower(infra.Config.Get("ratelimit", "off")) {
-			case "on", "yes", "true", "enable", "enabled":
-				if lmtr != nil {
-					ctx := c.Request().Context()
-
-					r, e := lmtr.Allow(ctx, "LMTR")
-
-					if e != nil {
-						slog.Info("rate limiter", "runtime error", e)
-					} else if !r.Allowed {
-						return c.NoContent(http.StatusTooManyRequests)
-					}
-				}
-			}
-
-			return next(c)
-		}
-	}
 }
 
 // @title			Hello world entry API
@@ -471,6 +480,7 @@ func main() {
 			    </html>
 			`),
 		),
+		rateLimiter: openRateLimiter(),
 	}
 
 	pr.MustRegister(h.requestCount)
@@ -482,32 +492,30 @@ func main() {
 
 	e.Use(middleware.Recover())
 
-	limitIt := NewRateLimiterMiddleware()
-
-	e.GET("/swagger/*", limitIt(echoSwagger.WrapHandler))
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 	e.GET(
-		"/swagit", limitIt(func(c echo.Context) error {
+		"/swagit", func(c echo.Context) error {
 			return c.Redirect(
 				http.StatusMovedPermanently,
 				"/swagger/index.html",
 			)
-		}),
+		},
 	)
 
 	e.GET(
-		"/hcheck", limitIt(func(c echo.Context) error {
+		"/hcheck", func(c echo.Context) error {
 			hcheckCount.Inc()
 
 			return c.NoContent(http.StatusOK)
-		}),
+		},
 	)
 
 	e.GET("/prometrics", echo.WrapHandler(promhttp.HandlerFor(pr, promhttp.HandlerOpts{})))
 
-	e.GET("/status", limitIt(h.Status))
+	e.GET("/status", h.Status)
 
-	e.GET("/rest", limitIt(h.Rest))
-	e.GET("/grpc", limitIt(h.Grpc))
+	e.GET("/rest", h.Rest)
+	e.GET("/grpc", h.Grpc)
 
 	HelloBackend.openRest(tc)
 	WorldBackend.openRest(tc)
