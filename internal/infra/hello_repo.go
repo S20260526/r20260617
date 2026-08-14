@@ -45,7 +45,7 @@ func (r *HelloRepo) Get() domain.Term {
 
 	if e := rslt.Error(); e != nil {
 		if e == vlk.Nil {
-			slog.Info("hello", "valkey", "cache missing")
+			slog.Info("hello", "valkey", "missing value")
 
 			pcmd := r.client.B().Set().Key(key).Value("").Build()
 			e = r.client.Do(context.Background(), pcmd).Error()
