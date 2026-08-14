@@ -17,8 +17,13 @@ func NewHelloRepo() (*HelloRepo, error) {
 	cli, e := vlk.NewClient(
 		vlk.ClientOption{
 			InitAddress: []string{
-				Config.Get("valkeyhostport", "valkey:6379"),
+				"vlk-master:6379",
+				"vlk-replica1:6379",
+				"vlk-replica2:6379"
 			},
+			Sentinel: vlk.SentinelOption{
+				MasterSet: "valkey-master",
+			}
 		},
 	)
 
