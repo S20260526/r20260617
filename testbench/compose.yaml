@@ -27,6 +27,9 @@ services:
     image: ghcr.io/s20260526/m20260618-hello:latest
     depends_on:
       - config
+      - vlk-sentinel1
+      - vlk-sentinel2
+      - vlk-sentinel3
     volumes:
       - ./ssl/ca.crt:/ca.crt
       - ./ssl/hello.crt:/server.crt

@@ -17,9 +17,9 @@ func NewHelloRepo() (*HelloRepo, error) {
 	cli, e := vlk.NewClient(
 		vlk.ClientOption{
 			InitAddress: []string{
-				"vlk-master:6379",
-				"vlk-replica1:6379",
-				"vlk-replica2:6379",
+				"vlk-sentinel1:26379",
+				"vlk-sentinel2:26379",
+				"vlk-sentinel3:26379",
 			},
 			Sentinel: vlk.SentinelOption{
 				MasterSet: "valkey-master",
