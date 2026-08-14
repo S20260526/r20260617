@@ -19,11 +19,11 @@ func NewHelloRepo() (*HelloRepo, error) {
 			InitAddress: []string{
 				"vlk-master:6379",
 				"vlk-replica1:6379",
-				"vlk-replica2:6379"
+				"vlk-replica2:6379",
 			},
 			Sentinel: vlk.SentinelOption{
 				MasterSet: "valkey-master",
-			}
+			},
 		},
 	)
 
