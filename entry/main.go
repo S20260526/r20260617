@@ -180,7 +180,7 @@ func openRateLimiter() vlkl.RateLimiterClient {
 
 	lmtr, e := vlkl.NewRateLimiter(
 		vlkl.RateLimiterOption{
-			vlk.ClientOption{
+			vlkg.ClientOption{
 				InitAddress: []string{
 					"vlk-sentinel1:26379",
 					"vlk-sentinel2:26379",
