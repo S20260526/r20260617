@@ -186,7 +186,7 @@ func openRateLimiter() vlkl.RateLimiterClient {
 					"vlk-sentinel2:26379",
 					"vlk-sentinel3:26379",
 				},
-				Sentinel: vlk.SentinelOption{
+				Sentinel: vlkg.SentinelOption{
 					MasterSet: "valkey-master",
 				},
 			},
