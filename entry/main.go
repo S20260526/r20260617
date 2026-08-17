@@ -180,11 +180,14 @@ func openRateLimiter() vlkl.RateLimiterClient {
 
 	lmtr, e := vlkl.NewRateLimiter(
 		vlkl.RateLimiterOption{
-			ClientOption: vlkg.ClientOption{
+			vlk.ClientOption{
 				InitAddress: []string{
-					infra.Config.Get(
-						"valkeyhostport", "valkey:6379",
-					),
+					"vlk-sentinel1:26379",
+					"vlk-sentinel2:26379",
+					"vlk-sentinel3:26379",
+				},
+				Sentinel: vlk.SentinelOption{
+					MasterSet: "valkey-master",
 				},
 			},
 			KeyPrefix: "rate_limiter",
