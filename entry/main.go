@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"infra"
@@ -30,18 +31,22 @@ import (
 
 	grpc "google.golang.org/grpc"
 	grpccred "google.golang.org/grpc/credentials"
+
+	vlkg "github.com/valkey-io/valkey-go"
+	vlkl "github.com/valkey-io/valkey-go/valkeylimiter"
 )
 
 type Backend struct {
 	host     string
-	httpPort int
-	grpcPort int
+	httpPort string
+	grpcPort string
 
 	rest http.Client
 	grpc ft.ServiceClient
 }
 
 func (b *Backend) openRest(tc *tls.Config) {
+	b.httpPort = infra.Config.Get("mtlsport", "8080")
 	b.rest = http.Client{
 		Transport: &http.Transport{TLSClientConfig: tc},
 		Timeout:   5 * time.Second,
@@ -49,6 +54,7 @@ func (b *Backend) openRest(tc *tls.Config) {
 }
 
 func (b *Backend) openGrpc(tc *tls.Config) {
+	b.grpcPort = infra.Config.Get("grpcport", "8081")
 	c8n, e := grpc.NewClient(
 		b.grpcHostPort(),
 		grpc.WithTransportCredentials(grpccred.NewTLS(tc)),
@@ -60,30 +66,27 @@ func (b *Backend) openGrpc(tc *tls.Config) {
 }
 
 func (b *Backend) httpHostPort() string {
-	return fmt.Sprintf("%s:%d", b.host, b.httpPort)
+	if b.httpPort == "" {
+		panic("HTTP port not yet set")
+	}
+
+	return fmt.Sprintf("%s:%s", b.host, b.httpPort)
 }
 
 func (b *Backend) grpcHostPort() string {
-	return fmt.Sprintf("%s:%d", b.host, b.grpcPort)
+	if b.grpcPort == "" {
+		panic("gRPC port not yet set")
+	}
+
+	return fmt.Sprintf("%s:%s", b.host, b.grpcPort)
 }
 
 func (b *Backend) restUrl() string {
-	return fmt.Sprintf("https://%s:%d", b.host, b.httpPort)
+	return fmt.Sprintf("https://%s", b.httpHostPort())
 }
 
-var HelloBackend = &Backend{
-	host:     "hello",
-	httpPort: 8080,
-	grpcPort: 8081,
-	grpc:     nil,
-}
-
-var WorldBackend = &Backend{
-	host:     "world",
-	httpPort: 8080,
-	grpcPort: 8081,
-	grpc:     nil,
-}
+var HelloBackend = &Backend{host: "hello"}
+var WorldBackend = &Backend{host: "world"}
 
 type JwtStaff struct {
 	privKey *rsa.PrivateKey
@@ -123,6 +126,7 @@ type HelloHandler struct {
 	jwtStaff        *JwtStaff
 	requestCount    prometheus.Counter
 	statusHtml      *html.Template
+	rateLimiter     vlkl.RateLimiterClient
 }
 
 func panicIf(e error) {
@@ -166,6 +170,52 @@ func openTlsConfig() *tls.Config {
 	panicIf(e)
 
 	return tc
+}
+
+func openRateLimiter() vlkl.RateLimiterClient {
+	switch strings.ToLower(infra.Config.Get("ratelimit", "off")) {
+	case "off", "no", "false", "disable", "disabled":
+		return nil
+	}
+
+	lmtr, e := vlkl.NewRateLimiter(
+		vlkl.RateLimiterOption{
+			ClientOption: vlkg.ClientOption{
+				InitAddress: []string{
+					"vlk-sentinel1:26379",
+					"vlk-sentinel2:26379",
+					"vlk-sentinel3:26379",
+				},
+				Sentinel: vlkg.SentinelOption{
+					MasterSet: "valkey-master",
+				},
+			},
+			KeyPrefix: "rate_limiter",
+			Limit:     1,
+			Window:    5 * time.Second,
+		},
+	)
+
+	if e != nil {
+		slog.Info("rate limiter", "create error", e)
+		lmtr = nil
+	}
+
+	return lmtr
+}
+
+func (h *HelloHandler) rateLimited(ctx context.Context, key string) bool {
+	if h.rateLimiter != nil {
+		r, e := h.rateLimiter.Allow(ctx, key)
+
+		if e != nil {
+			slog.Info("rate limiter", "runtime error", e)
+		} else {
+			return !r.Allowed
+		}
+	}
+
+	return false
 }
 
 func (h *HelloHandler) ping(b *Backend) error {
@@ -241,6 +291,10 @@ func (h *HelloHandler) grpcRelay(b *Backend) chan string {
 }
 
 func (h *HelloHandler) Status(c echo.Context) error {
+	if h.rateLimited(c.Request().Context(), "status") {
+		return c.NoContent(http.StatusTooManyRequests)
+	}
+
 	hl := "ok"
 	w := "ok"
 
@@ -274,6 +328,7 @@ func (h *HelloHandler) Status(c echo.Context) error {
 // @Param			X-Token	header		string	false	"JWT access token"
 // @Success		200		{string}	string
 // @Failure		403
+// @Failure		429
 // @Failure		500
 // @Router			/rest [get]
 func (h *HelloHandler) Rest(c echo.Context) error {
@@ -287,6 +342,7 @@ func (h *HelloHandler) Rest(c echo.Context) error {
 // @Param			X-Token	header		string	false	"JWT access token"
 // @Success		200		{string}	string
 // @Failure		403
+// @Failure		429
 // @Failure		500
 // @Router			/grpc [get]
 func (h *HelloHandler) Grpc(c echo.Context) error {
@@ -312,6 +368,10 @@ func (h *HelloHandler) handle(c echo.Context) error {
 }
 
 func (h *HelloHandler) noToken(c echo.Context) error {
+	if h.rateLimited(c.Request().Context(), "newtoken") {
+		return c.NoContent(http.StatusTooManyRequests)
+	}
+
 	t, e := h.jwtStaff.NewToken()
 
 	if e != nil {
@@ -425,6 +485,7 @@ func main() {
 			    </html>
 			`),
 		),
+		rateLimiter: openRateLimiter(),
 	}
 
 	pr.MustRegister(h.requestCount)

@@ -42,6 +42,9 @@
                     "403": {
                         "description": "Forbidden"
                     },
+                    "429": {
+                        "description": "Too Many Requests"
+                    },
                     "500": {
                         "description": "Internal Server Error"
                     }
@@ -75,6 +78,9 @@
                     },
                     "403": {
                         "description": "Forbidden"
+                    },
+                    "429": {
+                        "description": "Too Many Requests"
                     },
                     "500": {
                         "description": "Internal Server Error"

@@ -17,8 +17,15 @@ func cmp[U comparable](dt domain.Term, u *U, t *testing.T) {
 	}
 }
 
+type MockHelloRepo struct {
+}
+
+func (r MockHelloRepo) Get() domain.Term {
+	return domain.NewHello()
+}
+
 func TestHello(t *testing.T) {
-	s := NewHelloService()
+	s := NewHelloService(MockHelloRepo{})
 	h := domain.NewHello()
 
 	cmp(s.Get(), &h, t)

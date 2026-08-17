@@ -28,7 +28,9 @@ func StartGrpcServer(h Handler) error {
 
 	tc.NextProtos = []string{"h2"}
 
-	c8n, e := tls.Listen("tcp", ":8081", tc)
+	port := Config.Get("grpcport", "8081")
+
+	c8n, e := tls.Listen("tcp", ":"+port, tc)
 
 	if e != nil {
 		return e

@@ -5,12 +5,13 @@ import (
 )
 
 type HelloService struct {
+	repo domain.Repo
 }
 
-func NewHelloService() *HelloService {
-	return &HelloService{}
+func NewHelloService(repo domain.Repo) *HelloService {
+	return &HelloService{repo}
 }
 
 func (s *HelloService) Get() domain.Term {
-	return domain.NewHello()
+	return s.repo.Get()
 }

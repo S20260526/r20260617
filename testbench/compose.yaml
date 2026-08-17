@@ -3,35 +3,143 @@ name: testbench
 services:
   entry1:
     image: ghcr.io/s20260526/m20260618-entry:latest
+    depends_on:
+      - config
     volumes:
       - ./ssl/ca.crt:/ca.crt
       - ./ssl/jwt.key:/jwt.key
       - ./ssl/jwt.pub:/jwt.pub
       - ./ssl/entry.crt:/client.crt
       - ./ssl/entry.key:/client.key
+    networks:
+      - default
+      - vlk-net
 
   entry2:
     image: ghcr.io/s20260526/m20260618-entry:latest
+    depends_on:
+      - config
     volumes:
       - ./ssl/ca.crt:/ca.crt
       - ./ssl/jwt.key:/jwt.key
       - ./ssl/jwt.pub:/jwt.pub
       - ./ssl/entry.crt:/client.crt
       - ./ssl/entry.key:/client.key
+    networks:
+      - default
+      - vlk-net
 
   hello:
     image: ghcr.io/s20260526/m20260618-hello:latest
+    depends_on:
+      - config
+      - vlk-sentinel1
+      - vlk-sentinel2
+      - vlk-sentinel3
     volumes:
       - ./ssl/ca.crt:/ca.crt
       - ./ssl/hello.crt:/server.crt
       - ./ssl/hello.key:/server.key
+    networks:
+      - default
+      - vlk-net
 
   world:
     image: ghcr.io/s20260526/m20260618-world:latest
+    depends_on:
+      - config
     volumes:
       - ./ssl/ca.crt:/ca.crt
       - ./ssl/world.crt:/server.crt
       - ./ssl/world.key:/server.key
+
+  config:
+    image: gcr.io/etcd-development/etcd:v3.7.1
+    volumes:
+      - etcd-data:/etcd-data
+    command:
+      - /usr/local/bin/etcd
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://127.0.0.1:2379
+      - --data-dir=/etcd-data
+
+  vlk-master:
+    image: ghcr.io/valkey-io/valkey:alpine
+    volumes:
+      - valkey-data-master:/data
+    command: valkey-server
+    networks:
+      vlk-net:
+        ipv4_address: 172.28.0.10
+
+  vlk-replica1:
+    image: ghcr.io/valkey-io/valkey:alpine
+    volumes:
+      - valkey-data-replica1:/data
+    command:
+      - valkey-server
+      - --replicaof
+      - vlk-master
+      - "6379"
+    depends_on:
+      - vlk-master
+    networks:
+      vlk-net:
+        ipv4_address: 172.28.0.11
+
+  vlk-replica2:
+    image: ghcr.io/valkey-io/valkey:alpine
+    volumes:
+      - valkey-data-replica2:/data
+    command:
+      - valkey-server
+      - --replicaof
+      - vlk-master
+      - "6379"
+    depends_on:
+      - vlk-master
+    networks:
+      vlk-net:
+        ipv4_address: 172.28.0.12
+
+  vlk-sentinel1:
+    image: ghcr.io/valkey-io/valkey:alpine
+    command:
+      - valkey-sentinel
+      - /etc/sentinel/sentinel.conf
+    volumes:
+      - ./valkey-sentinel-1.conf.d:/etc/sentinel
+    depends_on:
+      - vlk-master
+    networks:
+      vlk-net:
+        ipv4_address: 172.28.0.21
+
+  vlk-sentinel2:
+    image: ghcr.io/valkey-io/valkey:alpine
+    command:
+      - valkey-sentinel
+      - /etc/sentinel/sentinel.conf
+    volumes:
+      - ./valkey-sentinel-2.conf.d:/etc/sentinel
+    depends_on:
+      - vlk-master
+    networks:
+      vlk-net:
+        ipv4_address: 172.28.0.22
+
+  vlk-sentinel3:
+    image: ghcr.io/valkey-io/valkey:alpine
+    command:
+      - valkey-sentinel
+      - /etc/sentinel/sentinel.conf
+    volumes:
+      - ./valkey-sentinel-3.conf.d:/etc/sentinel
+    depends_on:
+      - vlk-master
+    networks:
+      vlk-net:
+        ipv4_address: 172.28.0.23
 
   h:
     image: haproxy:3.0
@@ -119,3 +227,15 @@ volumes:
   fluent-bit-state:
   prometheus_data:
   grafana-data:
+  etcd-data:
+  valkey-data-master:
+  valkey-data-replica1:
+  valkey-data-replica2:
+
+networks:
+  vlk-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+          gateway: 172.28.0.1
