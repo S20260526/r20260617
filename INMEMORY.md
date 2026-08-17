@@ -39,6 +39,6 @@ docker compose up
 ![hey at stop valkey-master](screenshots/hey-at-stop-valkey-master.png)
 ![valkey master stopped](screenshots/valkey-master-stopped.png)
 
-Видно, что часть запросов обслужено с ошибкой 500 из-за того, что, хотя производительность просела из-за задержки клиента на поиск нового master. В журнале sentinel valkey видно (для примера взят только один из экземпляров), как происходит в этот момент назначение нового master
+Видно, что часть запросов обслужено с ошибкой 500 из-за того, что происходит поиск нового master. В журнале sentinel valkey видно (для примера взят только один из экземпляров), как происходит в этот момент назначение нового master
 
 ![valkey new master election](screenshots/valkey-new-master-election.png)
