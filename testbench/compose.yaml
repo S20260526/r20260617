@@ -11,6 +11,9 @@ services:
       - ./ssl/jwt.pub:/jwt.pub
       - ./ssl/entry.crt:/client.crt
       - ./ssl/entry.key:/client.key
+    networks:
+      - default
+      - vlk-net
 
   entry2:
     image: ghcr.io/s20260526/m20260618-entry:latest
@@ -22,6 +25,9 @@ services:
       - ./ssl/jwt.pub:/jwt.pub
       - ./ssl/entry.crt:/client.crt
       - ./ssl/entry.key:/client.key
+    networks:
+      - default
+      - vlk-net
 
   hello:
     image: ghcr.io/s20260526/m20260618-hello:latest
