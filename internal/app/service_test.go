@@ -24,6 +24,12 @@ func (r MockHelloRepo) Get() domain.Term {
 	return domain.NewHello()
 }
 
+type MockQueue struct {
+}
+
+func (r MockQueue) Put(string) {
+}
+
 func TestHello(t *testing.T) {
 	s := NewHelloService(MockHelloRepo{})
 	h := domain.NewHello()
@@ -32,7 +38,7 @@ func TestHello(t *testing.T) {
 }
 
 func TestWorld(t *testing.T) {
-	s := NewWorldService()
+	s := NewWorldService(MockQueue{})
 	w := domain.NewWorld()
 
 	cmp(s.Get(), &w, t)
