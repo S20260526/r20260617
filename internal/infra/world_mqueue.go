@@ -28,21 +28,19 @@ func (q *RabbitMQ) mainLoop() {
 		conn := dial()
 		chnl := makeChnl(conn)
 
-		if makeQueue(chnl) {
-			slog.Info("rabbitmq", "state", "connected")
-			for {
-				for s == "" {
-					select {
-					case s = <-q.queue:
-					}
+		slog.Info("rabbitmq", "state", "connected")
+		for {
+			for s == "" {
+				select {
+				case s = <-q.queue:
 				}
-
-				if !publish(chnl, s) {
-					break
-				}
-				slog.Info("rabbitmq", "state", "sent")
-				s = ""
 			}
+
+			if !publish(chnl, s) {
+				break
+			}
+			slog.Info("rabbitmq", "state", "sent")
+			s = ""
 		}
 
 		if chnl != nil {
@@ -61,7 +59,12 @@ func (q *RabbitMQ) mainLoop() {
 func dial() *amqp.Connection {
 	slog.Info("rabbitmq", "state", "dial")
 
-	conn, e := amqp.Dial("amqp://guest:guest@rabbitmq:5672")
+	conn, e := amqp.Dial(
+		Config.Get(
+			"rabbitmq.url",
+			"amqp://guest:guest@rabbitmq:5672",
+		),
+	)
 
 	if e == nil {
 		return conn
@@ -84,27 +87,6 @@ func makeChnl(conn *amqp.Connection) *amqp.Channel {
 	}
 
 	return nil
-}
-
-func makeQueue(chnl *amqp.Channel) bool {
-	if chnl != nil {
-		_, e := chnl.QueueDeclare(
-			"world",
-			true,  // Durable
-			false, // Delete if unused
-			false, // Exclusive
-			true,  // No-wait
-			nil,   // Arguments
-		)
-
-		if e == nil {
-			return true
-		}
-
-		slog.Info("rabbitmq", "queue error", e)
-	}
-
-	return false
 }
 
 func publish(chnl *amqp.Channel, s string) bool {
