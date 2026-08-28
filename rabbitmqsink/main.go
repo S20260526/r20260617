@@ -76,8 +76,11 @@ func loopCycle() {
 			nil,   // Args
 		)
 
-		for e == nil {
+		if e == nil {
 			slog.Info("rabbitmq", "state", "ready")
+		}
+
+		for e == nil {
 
 			select {
 			case msg, ok := <-delivery:
