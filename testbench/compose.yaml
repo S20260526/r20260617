@@ -195,7 +195,7 @@ services:
   rmq-entry:
     image: haproxy:3.0
     volumes:
-      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy-rmq.cfg:ro
+      - ./haproxy-rmq.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     depends_on:
       - rmq1
       - rmq2

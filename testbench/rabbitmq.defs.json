@@ -1,4 +1,9 @@
 {
+  "permissions":[
+    {
+      "configure":".*","read":".*","user":"guest","vhost":"/","write":".*"
+    }
+  ],
   "vhosts":[
     {
       "limits":{},
