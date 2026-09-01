@@ -59,12 +59,7 @@ func (q *RabbitMQ) mainLoop() {
 func dial() *amqp.Connection {
 	slog.Info("rabbitmq", "state", "dial")
 
-	conn, e := amqp.Dial(
-		Config.Get(
-			"rabbitmq.url",
-			"amqp://guest:guest@rabbitmq:5672",
-		),
-	)
+	conn, e := amqp.Dial("amqp://guest:guest@rmq-entry:5672")
 
 	if e == nil {
 		return conn

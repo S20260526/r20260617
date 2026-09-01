@@ -5,20 +5,13 @@ import (
 	"log/slog"
 	"time"
 
-	"infra"
-
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func loopCycle() {
+func loopCycle(url string) {
 	slog.Info("rabbitmq", "state", "dial")
 
-	conn, e := amqp.Dial(
-		infra.Config.Get(
-			"rabbitmq.url",
-			"amqp://guest:guest@rabbitmq:5672",
-		),
-	)
+	conn, e := amqp.Dial(url)
 
 	if e != nil {
 		slog.Info("rabbitmq", "connect error", e)
@@ -37,21 +30,6 @@ func loopCycle() {
 	}
 
 	defer chnl.Close()
-
-	_, e = chnl.QueueDeclare(
-		"world",
-		true,  // Durable
-		false, // Delete if unused
-		false, // Exclusive
-		true,  // No-wait
-		nil,   // Arguments
-	)
-
-	if e != nil {
-		slog.Info("rabbitmq", "queue error", e)
-
-		return
-	}
 
 	for {
 		e = chnl.Qos(
@@ -96,11 +74,18 @@ func loopCycle() {
 	}
 
 	slog.Info("rabbitmq", "state", "relax")
-	time.Sleep(time.Second * 1)
 }
 
 func main() {
 	for {
-		loopCycle()
+		for _, url := range []string{
+			"amqp://guest:guest@rmq1:5672",
+			"amqp://guest:guest@rmq2:5672",
+			"amqp://guest:guest@rmq3:5672",
+		} {
+			loopCycle(url)
+
+			time.Sleep(time.Second * 1)
+		}
 	}
 }

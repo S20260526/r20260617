@@ -1,4 +1,4 @@
-module rabbitmqsink
+module m20260618-rabbitmqsink
 
 go 1.24.4
 

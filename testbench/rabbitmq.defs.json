@@ -1,0 +1,24 @@
+{
+  "vhosts":[
+    {
+      "limits":{},
+      "metadata":{"description":"Default virtual host","tags":[],"default_queue_type":"classic"},
+      "name":"/"
+    }
+  ],
+  "users":[
+    {
+      "hashing_algorithm":"rabbit_password_hashing_sha256",
+      "limits":{},"name":"guest",
+      "password_hash":"weURE7ikD/70jy2ukC+IqX8tOHNICYA0gg+s2mBz5m733hSh",
+      "tags":["administrator"]
+    }
+  ],
+  "queues":[
+    {
+      "arguments": {"x-queue-type":"quorum"},
+      "auto_delete":false,"durable":true,"name":"world","type":"quorum",
+      "vhost":"/"
+    }
+  ]
+}

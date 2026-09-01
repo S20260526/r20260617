@@ -53,6 +53,9 @@ services:
       - ./ssl/world.crt:/server.crt
       - ./ssl/world.key:/server.key
 
+  rabbitmqsink:
+    image: ghcr.io/s20260526/m20260618-rabbitmqsink:latest
+
   config:
     image: gcr.io/etcd-development/etcd:v3.7.1
     volumes:
@@ -158,6 +161,45 @@ services:
     volumes:
       - ./ssl/ca.crt:/ca.crt
       - ./ssl/ca.key:/ca.key
+
+  rmq1:
+    image: rabbitmq:management
+    environment:
+      RABBITMQ_ERLANG_COOKIE: 99X9gv]QGdKEuT3wyw0xicPjLLYpsewK
+      RABBITMQ_NODENAME: rabbit@rmq1
+      RABBITMQ_CONFIG_FILE: /rabbitmq.conf
+    volumes:
+      - ./rabbitmq.conf:/rabbitmq.conf
+      - ./rabbitmq.defs.json:/rabbitmq.defs.json
+
+  rmq2:
+    image: rabbitmq:management
+    environment:
+      RABBITMQ_ERLANG_COOKIE: 99X9gv]QGdKEuT3wyw0xicPjLLYpsewK
+      RABBITMQ_NODENAME: rabbit@rmq2
+      RABBITMQ_CONFIG_FILE: /rabbitmq.conf
+    volumes:
+      - ./rabbitmq.conf:/rabbitmq.conf
+      - ./rabbitmq.defs.json:/rabbitmq.defs.json
+
+  rmq3:
+    image: rabbitmq:management
+    environment:
+      RABBITMQ_ERLANG_COOKIE: 99X9gv]QGdKEuT3wyw0xicPjLLYpsewK
+      RABBITMQ_NODENAME: rabbit@rmq3
+      RABBITMQ_CONFIG_FILE: /rabbitmq.conf
+    volumes:
+      - ./rabbitmq.conf:/rabbitmq.conf
+      - ./rabbitmq.defs.json:/rabbitmq.defs.json
+
+  rmq-entry:
+    image: haproxy:3.0
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy-rmq.cfg:ro
+    depends_on:
+      - rmq1
+      - rmq2
+      - rmq3
 
   l:
     image: grafana/loki:3.7
