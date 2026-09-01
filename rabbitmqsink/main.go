@@ -2,13 +2,16 @@ package main
 
 import (
 	"errors"
+	"encoding/json"
+	"io"
 	"log/slog"
+	"os"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func loopCycle(url string) {
+func loopCycle(url string, w io.Writer) {
 	slog.Info("rabbitmq", "state", "dial")
 
 	conn, e := amqp.Dial(url)
@@ -30,6 +33,8 @@ func loopCycle(url string) {
 	}
 
 	defer chnl.Close()
+
+	encoder := json.NewEncoder(w)
 
 	for {
 		e = chnl.Qos(
@@ -65,7 +70,19 @@ func loopCycle(url string) {
 				if !ok {
 					e = errors.New("delivery unexpected nil")
 				} else {
-					slog.Info("rabbitmq", "msg", msg.Body)
+					e := encoder.Encode(
+						struct{
+							Stamp string `json:"stamp"`
+							Random string `json:"random"`
+						}{
+							Stamp: string(msg.Body),
+							Random: "1234",
+						},
+					)
+
+					if e != nil {
+						slog.Info("rabbitmq", "sink error", e)
+					}
 				}
 			}
 		}
@@ -77,13 +94,23 @@ func loopCycle(url string) {
 }
 
 func main() {
+	var w io.Writer
+
+	f, e := os.Create("/temp.log")
+
+	if e == nil {
+		w = f
+	} else {
+		slog.Info("sinkfile", "error", e)
+	}
+
 	for {
 		for _, url := range []string{
 			"amqp://guest:guest@rmq1:5672",
 			"amqp://guest:guest@rmq2:5672",
 			"amqp://guest:guest@rmq3:5672",
 		} {
-			loopCycle(url)
+			loopCycle(url, w)
 
 			time.Sleep(time.Second * 1)
 		}
