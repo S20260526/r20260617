@@ -55,6 +55,8 @@ services:
 
   rabbitmqsink:
     image: ghcr.io/s20260526/m20260618-rabbitmqsink:latest
+    volumes:
+      - ./sink.txt:/sink.txt
 
   config:
     image: gcr.io/etcd-development/etcd:v3.7.1

@@ -3,9 +3,11 @@ package main
 import (
 	"errors"
 	"encoding/json"
+	"encoding/base64"
 	"io"
 	"log/slog"
 	"os"
+	"math/rand"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -70,13 +72,17 @@ func loopCycle(url string, w io.Writer) {
 				if !ok {
 					e = errors.New("delivery unexpected nil")
 				} else {
+					var buf [1024 * 1024]byte
+
+					rand.Read(buf[:])
+
 					e := encoder.Encode(
 						struct{
 							Stamp string `json:"stamp"`
-							Random string `json:"random"`
+							Blob string `json:"blob"`
 						}{
 							Stamp: string(msg.Body),
-							Random: "1234",
+							Blob: base64.StdEncoding.EncodeToString(buf[:]),
 						},
 					)
 
@@ -96,7 +102,7 @@ func loopCycle(url string, w io.Writer) {
 func main() {
 	var w io.Writer
 
-	f, e := os.Create("/temp.log")
+	f, e := os.Create("/sink.txt")
 
 	if e == nil {
 		w = f
