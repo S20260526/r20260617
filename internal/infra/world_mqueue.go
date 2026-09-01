@@ -29,7 +29,7 @@ func (q *RabbitMQ) mainLoop() {
 		chnl := makeChnl(conn)
 
 		slog.Info("rabbitmq", "state", "connected")
-		for {
+		for chnl != nil {
 			for s == "" {
 				select {
 				case s = <-q.queue:
