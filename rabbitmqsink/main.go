@@ -1,13 +1,13 @@
 package main
 
 import (
-	"errors"
-	"encoding/json"
 	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
-	"os"
 	"math/rand"
+	"os"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -77,12 +77,12 @@ func loopCycle(url string, w io.Writer) {
 					rand.Read(buf[:])
 
 					e := encoder.Encode(
-						struct{
+						struct {
 							Stamp string `json:"stamp"`
-							Blob string `json:"blob"`
+							Blob  string `json:"blob"`
 						}{
 							Stamp: string(msg.Body),
-							Blob: base64.StdEncoding.EncodeToString(buf[:]),
+							Blob:  base64.StdEncoding.EncodeToString(buf[:]),
 						},
 					)
 
