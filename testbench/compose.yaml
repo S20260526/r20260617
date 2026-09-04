@@ -203,6 +203,17 @@ services:
       - rmq2
       - rmq3
 
+  elasticsearch:
+    image: elasticsearch:8.19.21
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: false
+      xpack.security.http.ssl.enabled: false
+      xpack.security.transport.ssl.enabled: false
+      ES_JAVA_OPTS: "-Xms2g -Xmx2g"
+    ports:
+      - "9200:9200"
+
   l:
     image: grafana/loki:3.7
     container_name: loki
@@ -218,6 +229,7 @@ services:
     cap_add:
       - CAP_FOWNER
     volumes:
+      - ./sink.txt:/sink.txt:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - ./fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml:ro
       - fluent-bit-state:/var/fluent-bit/state
