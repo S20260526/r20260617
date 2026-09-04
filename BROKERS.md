@@ -6,7 +6,6 @@
 cd testbench/ssl
 bash generate.sh
 cd ..
-touch sink.txt
 docker compose pull
 docker compose up
 # до 5 минут может потребоваться всем этим замечательным
