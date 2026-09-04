@@ -16,8 +16,10 @@ func main() {
 
 	wg.Add(2)
 
+	q := infra.NewRabbitMQ()
+
 	go func() {
-		e := infra.StartGrpcServer(infra.NewHandler(app.NewWorldService()))
+		e := infra.StartGrpcServer(infra.NewHandler(app.NewWorldService(q)))
 
 		slog.Info("gRPC", "error", e)
 
@@ -25,7 +27,7 @@ func main() {
 	}()
 
 	go func() {
-		e := infra.StartMTLSServer(infra.NewHandler(app.NewWorldService()))
+		e := infra.StartMTLSServer(infra.NewHandler(app.NewWorldService(q)))
 
 		slog.Info("HTTP", "error", e)
 

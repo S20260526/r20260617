@@ -7,6 +7,7 @@ COPY hcheck/ /b/hcheck/
 COPY hello/ /b/hello/
 COPY world/ /b/world/
 COPY internal/ /b/internal/
+COPY rabbitmqsink/ /b/rabbitmqsink/
 
 RUN go build ./hello
 

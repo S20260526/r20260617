@@ -4,6 +4,7 @@ service:
   daemon: off
 
 parsers:
+
   - name: docker
     format: json
     time_key: time
@@ -11,10 +12,15 @@ parsers:
     time_keep: on
     decode_field_as: json log
 
+  - name: purejson
+    format: json
+
 pipeline:
 
   inputs:
+
     - name: tail
+      tag: log
       path: /var/lib/docker/containers/*/*-json.log
       parser: docker
       db: /var/fluent-bit/state/flb-docker.db
@@ -22,9 +28,20 @@ pipeline:
       skip_long_lines: on
       refresh_interval: 10
 
+    - name: tail
+      tag: sink
+      path: /sink.txt
+      parser: purejson
+      db: /var/fluent-bit/state/flb-sink.db
+      mem_buf_limit: 5MB
+      skip_long_lines: off
+      refresh_interval: 1
+      buffer_chunk_size: 1MB
+      buffer_max_size: 50MB
+
   filters:
     - name: lua
-      match: '*'
+      match: log
       call: tweak
       code: |
         function tweak(tag, timestamp, record)
@@ -35,9 +52,16 @@ pipeline:
         end
 
   outputs:
+
     - name: loki
-      match: '*'
+      match: log
       host: loki
       port: 3100
       uri: /loki/api/v1/push
       labels: app=m20260618
+
+    - name: es
+      match: sink
+      host: elasticsearch
+      index: sink
+      suppress_type_name: on

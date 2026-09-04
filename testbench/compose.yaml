@@ -53,6 +53,11 @@ services:
       - ./ssl/world.crt:/server.crt
       - ./ssl/world.key:/server.key
 
+  rabbitmqsink:
+    image: ghcr.io/s20260526/m20260618-rabbitmqsink:latest
+    volumes:
+      - ./sink.txt:/sink.txt
+
   config:
     image: gcr.io/etcd-development/etcd:v3.7.1
     volumes:
@@ -159,6 +164,56 @@ services:
       - ./ssl/ca.crt:/ca.crt
       - ./ssl/ca.key:/ca.key
 
+  rmq1:
+    image: rabbitmq:management
+    environment:
+      RABBITMQ_ERLANG_COOKIE: 99X9gv]QGdKEuT3wyw0xicPjLLYpsewK
+      RABBITMQ_NODENAME: rabbit@rmq1
+      RABBITMQ_CONFIG_FILE: /rabbitmq.conf
+    volumes:
+      - ./rabbitmq.conf:/rabbitmq.conf
+      - ./rabbitmq.defs.json:/rabbitmq.defs.json
+
+  rmq2:
+    image: rabbitmq:management
+    environment:
+      RABBITMQ_ERLANG_COOKIE: 99X9gv]QGdKEuT3wyw0xicPjLLYpsewK
+      RABBITMQ_NODENAME: rabbit@rmq2
+      RABBITMQ_CONFIG_FILE: /rabbitmq.conf
+    volumes:
+      - ./rabbitmq.conf:/rabbitmq.conf
+      - ./rabbitmq.defs.json:/rabbitmq.defs.json
+
+  rmq3:
+    image: rabbitmq:management
+    environment:
+      RABBITMQ_ERLANG_COOKIE: 99X9gv]QGdKEuT3wyw0xicPjLLYpsewK
+      RABBITMQ_NODENAME: rabbit@rmq3
+      RABBITMQ_CONFIG_FILE: /rabbitmq.conf
+    volumes:
+      - ./rabbitmq.conf:/rabbitmq.conf
+      - ./rabbitmq.defs.json:/rabbitmq.defs.json
+
+  rmq-entry:
+    image: haproxy:3.0
+    volumes:
+      - ./haproxy-rmq.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - rmq1
+      - rmq2
+      - rmq3
+
+  elasticsearch:
+    image: elasticsearch:8.19.21
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: false
+      xpack.security.http.ssl.enabled: false
+      xpack.security.transport.ssl.enabled: false
+      ES_JAVA_OPTS: "-Xms2g -Xmx2g"
+    ports:
+      - "9200:9200"
+
   l:
     image: grafana/loki:3.7
     container_name: loki
@@ -174,6 +229,7 @@ services:
     cap_add:
       - CAP_FOWNER
     volumes:
+      - ./sink.txt:/sink.txt:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - ./fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml:ro
       - fluent-bit-state:/var/fluent-bit/state

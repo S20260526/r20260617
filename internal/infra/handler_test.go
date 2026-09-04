@@ -14,6 +14,12 @@ func (r MockHelloRepo) Get() domain.Term {
 	return domain.NewHello()
 }
 
+type MockWorldQueue struct {
+}
+
+func (q MockWorldQueue) Put(_ string) {
+}
+
 func TestUseCase(t *testing.T) {
 	hh := NewHandler(app.NewHelloService(MockHelloRepo{}))
 
@@ -21,7 +27,7 @@ func TestUseCase(t *testing.T) {
 		t.Error("Hello not met")
 	}
 
-	wh := NewHandler(app.NewWorldService())
+	wh := NewHandler(app.NewWorldService(MockWorldQueue{}))
 
 	if wh.Get() != "World" {
 		t.Error("World not met")

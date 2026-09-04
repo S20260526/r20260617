@@ -9,10 +9,10 @@ COPY world/ /b/world/
 COPY internal/ /b/internal/
 COPY rabbitmqsink/ /b/rabbitmqsink/
 
-RUN go build ./world
+RUN go build ./rabbitmqsink
 
 FROM scratch
 
-COPY --from=b /b/m20260618-world /m20260618-world
+COPY --from=b /b/m20260618-rabbitmqsink /m20260618-rabbitmqsink
 
-ENTRYPOINT ["/m20260618-world"]
+ENTRYPOINT ["/m20260618-rabbitmqsink"]
