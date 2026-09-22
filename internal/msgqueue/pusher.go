@@ -19,8 +19,8 @@ func NewPusher(url string, q Queue) *Pusher {
 	return &Pusher{url: url, queue: q, ready: false, payload: nil}
 }
 
-func (p *Pusher) Charge(s string) {
-	p.payload = []byte(s)
+func (p *Pusher) Charge(b []byte) {
+	p.payload = b
 }
 
 func (p *Pusher) Push() error {

@@ -12,7 +12,7 @@ func NewPuller(url []string, queue Queue) *Puller {
 	return &Puller{url: url, curr: 0, queue: queue, ready: false}
 }
 
-func (p *Puller) Pull() (string, error) {
+func (p *Puller) Pull() ([]byte, error) {
 	var err error
 
 	if !p.ready {
@@ -35,7 +35,7 @@ func (p *Puller) Pull() (string, error) {
 		d, err = p.queue.Consume()
 
 		if err == nil {
-			return string(d), nil
+			return d, nil
 		}
 
 		p.ready = false
@@ -50,7 +50,7 @@ func (p *Puller) Pull() (string, error) {
 		p.curr = 0
 	}
 
-	return "", err
+	return nil, err
 }
 
 func (p *Puller) Cleanup() {

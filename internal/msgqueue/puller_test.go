@@ -13,7 +13,7 @@ func TestPullOptimistic(t *testing.T) {
 
 	d, err := p.Pull()
 
-	if d != "1234" || err != nil || q.trace != "cU o C " {
+	if string(d) != "1234" || err != nil || q.trace != "cU o C " {
 		t.Fatal()
 	}
 
@@ -21,7 +21,7 @@ func TestPullOptimistic(t *testing.T) {
 
 	d, err = p.Pull()
 
-	if d != "ABCD" || err != nil || q.trace != "cU o C C " {
+	if string(d) != "ABCD" || err != nil || q.trace != "cU o C C " {
 		t.Fatal()
 	}
 }
@@ -33,7 +33,7 @@ func TestPullConnectFailed(t *testing.T) {
 
 	d, err := p.Pull()
 
-	if d != "" || err != connectFailed || q.trace != "cU " {
+	if d != nil || err != connectFailed || q.trace != "cU " {
 		t.Fatal()
 	}
 
@@ -41,7 +41,7 @@ func TestPullConnectFailed(t *testing.T) {
 
 	d, err = p.Pull()
 
-	if d != "" || err != connectFailed || q.trace != "cU cV " {
+	if d != nil || err != connectFailed || q.trace != "cU cV " {
 		t.Fatal()
 	}
 
@@ -49,13 +49,13 @@ func TestPullConnectFailed(t *testing.T) {
 
 	d, err = p.Pull()
 
-	if d != "" || err != connectFailed || q.trace != "cU cV cW " {
+	if d != nil || err != connectFailed || q.trace != "cU cV cW " {
 		t.Fatal()
 	}
 
 	d, err = p.Pull()
 
-	if d != "1234" || err != nil || q.trace != "cU cV cW cU o C " {
+	if string(d) != "1234" || err != nil || q.trace != "cU cV cW cU o C " {
 		t.Fatal()
 	}
 }
@@ -67,13 +67,13 @@ func TestPullOpenChannelFailed(t *testing.T) {
 
 	d, err := p.Pull()
 
-	if d != "" || err != channelOpenFailed || q.trace != "cU o D " {
+	if d != nil || err != channelOpenFailed || q.trace != "cU o D " {
 		t.Fatal()
 	}
 
 	d, err = p.Pull()
 
-	if d != "1234" || err != nil || q.trace != "cU o D cV o C " {
+	if string(d) != "1234" || err != nil || q.trace != "cU o D cV o C " {
 		t.Fatal()
 	}
 }
@@ -85,13 +85,13 @@ func TestPullConsumeFailed(t *testing.T) {
 
 	d, err := p.Pull()
 
-	if d != "" || err != consumeFailed || q.trace != "cU o C X D " {
+	if d != nil || err != consumeFailed || q.trace != "cU o C X D " {
 		t.Fatal()
 	}
 
 	d, err = p.Pull()
 
-	if d != "1234" || err != nil || q.trace != "cU o C X D cV o C " {
+	if string(d) != "1234" || err != nil || q.trace != "cU o C X D cV o C " {
 		t.Fatal()
 	}
 }
