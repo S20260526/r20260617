@@ -1,0 +1,68 @@
+package msgqueue
+
+import (
+	"errors"
+)
+
+var notCharged = errors.New("Not charged")
+
+type Pusher struct {
+	url   string
+	queue Queue
+
+	ready bool
+
+	payload []byte
+}
+
+func NewPusher(url string, q Queue) *Pusher {
+	return &Pusher{url: url, queue: q, ready: false, payload: nil}
+}
+
+func (p *Pusher) Charge(s string) {
+	p.payload = []byte(s)
+}
+
+func (p *Pusher) Push() error {
+	if p.payload == nil {
+		return notCharged
+	}
+
+	if !p.ready {
+		err := p.queue.Connect(p.url)
+
+		if err != nil {
+			return err
+		}
+		err = p.queue.OpenChannel()
+
+		if err != nil {
+			p.queue.Disconnect()
+
+			return err
+		}
+
+		p.ready = true
+	}
+
+	err := p.queue.Publish(p.payload)
+
+	if err != nil {
+		p.Cleanup()
+
+		return err
+	}
+
+	p.payload = nil
+
+	return nil
+}
+
+func (p *Pusher) Cleanup() {
+	if p.ready {
+		p.ready = false
+
+		p.queue.CloseChannel()
+		p.queue.Disconnect()
+	}
+}
