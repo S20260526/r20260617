@@ -1,6 +1,7 @@
 package msgqueue
 
 import (
+	"context"
 	"errors"
 )
 
@@ -47,7 +48,7 @@ func (q *mq) Disconnect() {
 	q.trace += "D "
 }
 
-func (q *mq) Publish(b []byte) error {
+func (q *mq) Publish(_ context.Context, b []byte) error {
 	q.trace += "p" + string(b) + " "
 
 	if q.failWith == publishFailed {
@@ -59,7 +60,7 @@ func (q *mq) Publish(b []byte) error {
 	return nil
 }
 
-func (q *mq) Consume() ([]byte, error) {
+func (q *mq) Consume(_ context.Context) ([]byte, error) {
 	q.trace += "C "
 
 	if q.failWith == consumeFailed {

@@ -1,6 +1,7 @@
 package msgqueue
 
 import (
+	c "context"
 	"testing"
 )
 
@@ -11,7 +12,7 @@ func TestPullOptimistic(t *testing.T) {
 
 	p := NewPuller(urls, q)
 
-	d, err := p.Pull()
+	d, err := p.Pull(c.Background())
 
 	if string(d) != "1234" || err != nil || q.trace != "cU o C " {
 		t.Fatal()
@@ -19,7 +20,7 @@ func TestPullOptimistic(t *testing.T) {
 
 	q.inData = "ABCD"
 
-	d, err = p.Pull()
+	d, err = p.Pull(c.Background())
 
 	if string(d) != "ABCD" || err != nil || q.trace != "cU o C C " {
 		t.Fatal()
@@ -31,7 +32,7 @@ func TestPullConnectFailed(t *testing.T) {
 
 	p := NewPuller(urls, q)
 
-	d, err := p.Pull()
+	d, err := p.Pull(c.Background())
 
 	if d != nil || err != connectFailed || q.trace != "cU " {
 		t.Fatal()
@@ -39,7 +40,7 @@ func TestPullConnectFailed(t *testing.T) {
 
 	q.failWith = connectFailed
 
-	d, err = p.Pull()
+	d, err = p.Pull(c.Background())
 
 	if d != nil || err != connectFailed || q.trace != "cU cV " {
 		t.Fatal()
@@ -47,13 +48,13 @@ func TestPullConnectFailed(t *testing.T) {
 
 	q.failWith = connectFailed
 
-	d, err = p.Pull()
+	d, err = p.Pull(c.Background())
 
 	if d != nil || err != connectFailed || q.trace != "cU cV cW " {
 		t.Fatal()
 	}
 
-	d, err = p.Pull()
+	d, err = p.Pull(c.Background())
 
 	if string(d) != "1234" || err != nil || q.trace != "cU cV cW cU o C " {
 		t.Fatal()
@@ -65,13 +66,13 @@ func TestPullOpenChannelFailed(t *testing.T) {
 
 	p := NewPuller(urls, q)
 
-	d, err := p.Pull()
+	d, err := p.Pull(c.Background())
 
 	if d != nil || err != channelOpenFailed || q.trace != "cU o D " {
 		t.Fatal()
 	}
 
-	d, err = p.Pull()
+	d, err = p.Pull(c.Background())
 
 	if string(d) != "1234" || err != nil || q.trace != "cU o D cV o C " {
 		t.Fatal()
@@ -83,13 +84,13 @@ func TestPullConsumeFailed(t *testing.T) {
 
 	p := NewPuller(urls, q)
 
-	d, err := p.Pull()
+	d, err := p.Pull(c.Background())
 
 	if d != nil || err != consumeFailed || q.trace != "cU o C X D " {
 		t.Fatal()
 	}
 
-	d, err = p.Pull()
+	d, err = p.Pull(c.Background())
 
 	if string(d) != "1234" || err != nil || q.trace != "cU o C X D cV o C " {
 		t.Fatal()
@@ -107,14 +108,14 @@ func TestPullCleanup(t *testing.T) {
 		t.Fatal()
 	}
 
-	p.Pull()
+	p.Pull(c.Background())
 	p.Cleanup()
 
 	if q.trace != "cU o C X D " {
 		t.Fatal()
 	}
 
-	_, err := p.Pull()
+	_, err := p.Pull(c.Background())
 
 	if err != nil || q.trace != "cU o C X D cU o C " {
 		t.Fatal()

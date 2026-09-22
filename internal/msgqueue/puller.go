@@ -1,5 +1,9 @@
 package msgqueue
 
+import (
+	"context"
+)
+
 type Puller struct {
 	url   []string
 	curr  int
@@ -12,7 +16,7 @@ func NewPuller(url []string, queue Queue) *Puller {
 	return &Puller{url: url, curr: 0, queue: queue, ready: false}
 }
 
-func (p *Puller) Pull() ([]byte, error) {
+func (p *Puller) Pull(ctx context.Context) ([]byte, error) {
 	var err error
 
 	if !p.ready {
@@ -32,7 +36,7 @@ func (p *Puller) Pull() ([]byte, error) {
 	if p.ready {
 		var d []byte
 
-		d, err = p.queue.Consume()
+		d, err = p.queue.Consume(ctx)
 
 		if err == nil {
 			return d, nil

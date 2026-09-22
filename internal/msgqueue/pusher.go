@@ -1,6 +1,7 @@
 package msgqueue
 
 import (
+	"context"
 	"errors"
 )
 
@@ -23,7 +24,7 @@ func (p *Pusher) Charge(b []byte) {
 	p.payload = b
 }
 
-func (p *Pusher) Push() error {
+func (p *Pusher) Push(ctx context.Context) error {
 	if p.payload == nil {
 		return notCharged
 	}
@@ -45,7 +46,7 @@ func (p *Pusher) Push() error {
 		p.ready = true
 	}
 
-	err := p.queue.Publish(p.payload)
+	err := p.queue.Publish(ctx, p.payload)
 
 	if err != nil {
 		p.Cleanup()
