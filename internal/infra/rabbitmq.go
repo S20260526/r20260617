@@ -4,7 +4,39 @@ import (
 	c "context"
 	"errors"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"internal/msgqueue"
+	"log/slog"
 )
+
+type RMQIncoming struct {
+	dlvr *amqp.Delivery
+}
+
+func (r RMQIncoming) GetData() []byte {
+	return r.dlvr.Body
+}
+
+func (r RMQIncoming) Acknowledge() {
+	if err := r.dlvr.Ack(true); err != nil {
+		slog.Warn(
+			"infra",
+			"where", "RabbitMQ",
+			"when", "Ack",
+			"what", err,
+		)
+	}
+}
+
+func (r RMQIncoming) Reject() {
+	if err := r.dlvr.Nack(false, true); err != nil {
+		slog.Warn(
+			"infra",
+			"where", "RabbitMQ",
+			"when", "Nack",
+			"what", err,
+		)
+	}
+}
 
 type RMQQueue struct {
 	name string
@@ -116,11 +148,11 @@ func (q *RMQQueue) Publish(ctx c.Context, msg []byte) error {
 	)
 }
 
-func (q *RMQQueue) Consume(_ c.Context) ([]byte, error) {
+func (q *RMQQueue) Consume(_ c.Context) (msgqueue.Incoming, error) {
 	return nil, errors.New("penguins do fly, but only by mistake")
 }
 
-func (q *RMQPull) Consume(ctx c.Context) ([]byte, error) {
+func (q *RMQPull) Consume(ctx c.Context) (msgqueue.Incoming, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -130,6 +162,6 @@ func (q *RMQPull) Consume(ctx c.Context) ([]byte, error) {
 			return nil, errors.New("unexpected void delivery")
 		}
 
-		return dlvr.Body, nil
+		return &RMQIncoming{&dlvr}, nil
 	}
 }

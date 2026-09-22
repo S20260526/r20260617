@@ -14,7 +14,7 @@ func TestPullOptimistic(t *testing.T) {
 
 	d, err := p.Pull(c.Background())
 
-	if string(d) != "1234" || err != nil || q.trace != "cU o C " {
+	if string(d.GetData()) != "1234" || err != nil || q.trace != "cU o C " {
 		t.Fatal()
 	}
 
@@ -22,7 +22,7 @@ func TestPullOptimistic(t *testing.T) {
 
 	d, err = p.Pull(c.Background())
 
-	if string(d) != "ABCD" || err != nil || q.trace != "cU o C C " {
+	if string(d.GetData()) != "ABCD" || err != nil || q.trace != "cU o C C " {
 		t.Fatal()
 	}
 }
@@ -56,7 +56,7 @@ func TestPullConnectFailed(t *testing.T) {
 
 	d, err = p.Pull(c.Background())
 
-	if string(d) != "1234" || err != nil || q.trace != "cU cV cW cU o C " {
+	if string(d.GetData()) != "1234" || err != nil || q.trace != "cU cV cW cU o C " {
 		t.Fatal()
 	}
 }
@@ -74,7 +74,7 @@ func TestPullOpenChannelFailed(t *testing.T) {
 
 	d, err = p.Pull(c.Background())
 
-	if string(d) != "1234" || err != nil || q.trace != "cU o D cV o C " {
+	if string(d.GetData()) != "1234" || err != nil || q.trace != "cU o D cV o C " {
 		t.Fatal()
 	}
 }
@@ -92,7 +92,7 @@ func TestPullConsumeFailed(t *testing.T) {
 
 	d, err = p.Pull(c.Background())
 
-	if string(d) != "1234" || err != nil || q.trace != "cU o C X D cV o C " {
+	if string(d.GetData()) != "1234" || err != nil || q.trace != "cU o C X D cV o C " {
 		t.Fatal()
 	}
 }

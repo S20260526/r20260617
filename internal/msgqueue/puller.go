@@ -16,7 +16,7 @@ func NewPuller(url []string, queue Queue) *Puller {
 	return &Puller{url: url, curr: 0, queue: queue, ready: false}
 }
 
-func (p *Puller) Pull(ctx context.Context) ([]byte, error) {
+func (p *Puller) Pull(ctx context.Context) (Incoming, error) {
 	var err error
 
 	if !p.ready {
@@ -34,7 +34,7 @@ func (p *Puller) Pull(ctx context.Context) ([]byte, error) {
 	}
 
 	if p.ready {
-		var d []byte
+		var d Incoming
 
 		d, err = p.queue.Consume(ctx)
 

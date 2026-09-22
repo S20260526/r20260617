@@ -10,6 +10,20 @@ var channelOpenFailed = errors.New("ECHAN")
 var publishFailed = errors.New("EPBSH")
 var consumeFailed = errors.New("EPULL")
 
+type mi struct {
+	data string
+}
+
+func (m mi) GetData() []byte {
+	return []byte(m.data)
+}
+
+func (m mi) Acknowledge() {
+}
+
+func (m mi) Reject() {
+}
+
 type mq struct {
 	failWith error
 	inData   string
@@ -64,7 +78,7 @@ func (q *mq) Publish(ctx context.Context, b []byte) error {
 	return nil
 }
 
-func (q *mq) Consume(ctx context.Context) ([]byte, error) {
+func (q *mq) Consume(ctx context.Context) (Incoming, error) {
 	q.trace += "C "
 
 	if err := ctx.Err(); err != nil {
@@ -74,8 +88,8 @@ func (q *mq) Consume(ctx context.Context) ([]byte, error) {
 	if q.failWith == consumeFailed {
 		q.failWith = nil
 
-		return []byte{}, consumeFailed
+		return nil, consumeFailed
 	}
 
-	return []byte(q.inData), nil
+	return mi{q.inData}, nil
 }
