@@ -48,8 +48,12 @@ func (q *mq) Disconnect() {
 	q.trace += "D "
 }
 
-func (q *mq) Publish(_ context.Context, b []byte) error {
+func (q *mq) Publish(ctx context.Context, b []byte) error {
 	q.trace += "p" + string(b) + " "
+
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 
 	if q.failWith == publishFailed {
 		q.failWith = nil
@@ -60,8 +64,12 @@ func (q *mq) Publish(_ context.Context, b []byte) error {
 	return nil
 }
 
-func (q *mq) Consume(_ context.Context) ([]byte, error) {
+func (q *mq) Consume(ctx context.Context) ([]byte, error) {
 	q.trace += "C "
+
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 
 	if q.failWith == consumeFailed {
 		q.failWith = nil

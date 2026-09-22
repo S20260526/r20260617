@@ -123,3 +123,18 @@ func TestPushCleanup(t *testing.T) {
 		t.Fatal()
 	}
 }
+
+func TestPushContext(t *testing.T) {
+	q := &mq{}
+	p := NewPusher(url, q)
+
+	ctx, cancel := c.WithCancel(c.Background())
+
+	p.Charge([]byte("1234"))
+
+	cancel()
+
+	if p.Push(ctx) != c.Canceled || q.trace != "cU o p1234 X D " { // FIXME m.b. don't cleanup
+		t.Fatal(q.trace)
+	}
+}

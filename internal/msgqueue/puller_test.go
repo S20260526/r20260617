@@ -121,3 +121,19 @@ func TestPullCleanup(t *testing.T) {
 		t.Fatal()
 	}
 }
+
+func TestPullContext(t *testing.T) {
+	q := &mq{}
+
+	p := NewPuller(urls, q)
+
+	ctx, cancel := c.WithCancel(c.Background())
+
+	cancel()
+
+	d, err := p.Pull(ctx)
+
+	if d != nil || err != c.Canceled || q.trace != "cU o C X D " {
+		t.Fatal()
+	}
+}
