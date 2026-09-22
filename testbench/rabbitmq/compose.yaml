@@ -1,0 +1,33 @@
+services:
+  pusher:
+    build:
+      context: ../../
+      dockerfile: testbench/rabbitmq/Dockerfile
+    command: ["amqp://rabbitmq", "push"]
+
+  puller1:
+    build:
+      context: ../../
+      dockerfile: testbench/rabbitmq/Dockerfile
+    command: ["amqp://rabbitmq", "pull"]
+
+  puller2:
+    build:
+      context: ../../
+      dockerfile: testbench/rabbitmq/Dockerfile
+    command: ["amqp://rabbitmq", "pull"]
+
+  puller3:
+    build:
+      context: ../../
+      dockerfile: testbench/rabbitmq/Dockerfile
+    command: ["amqp://rabbitmq", "pull"]
+
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - "15672:15672"
+    environment:
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: '-rabbitmq_management load_definitions "/rabbitmq.defs.json"'
+    volumes:
+      - ./rabbitmq.defs.json:/rabbitmq.defs.json
