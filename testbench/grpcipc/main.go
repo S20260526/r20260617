@@ -2,12 +2,9 @@ package main
 
 import (
 	"context"
-	"internal/grpcipc"
+	"internal/infra"
 	"os"
 	"time"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"log"
 )
@@ -28,18 +25,9 @@ func main() {
 		socketpath = os.Args[1]
 	}
 
-	conn, err := grpc.NewClient(
-		"unix://"+socketpath,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	ipc := infra.NewGrpcIpcClient(socketpath)
 
-	if err != nil {
-		log.Fatal("ERR:", err)
-	}
-
-	ipc := grpcipc.NewIpcClient(conn)
-
-	rqst := &grpcipc.Request{
+	rqst := &infra.GrpcIpcRequest{
 		Payload: payload,
 	}
 
