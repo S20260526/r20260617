@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"internal/infra"
 	"internal/msgqueue"
 	"log"
@@ -11,7 +12,7 @@ import (
 )
 
 func usage() {
-	log.Println("usage: rabbitmq URL [push|pull]")
+	fmt.Println("usage: rabbitmq URL [push|pull]")
 	os.Exit(1)
 }
 
