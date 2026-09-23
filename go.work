@@ -1,7 +1,9 @@
 go 1.24
 
 use (
-	./testbench/rabbitmq
-	./internal/msgqueue
 	./internal/infra
+	./internal/msgqueue
+	./internal/grpcipc
+	./testbench/grpcipc
+	./testbench/rabbitmq
 )

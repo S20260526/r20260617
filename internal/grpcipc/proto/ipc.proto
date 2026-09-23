@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package grpcipc;
+
+option go_package = "internal/grpcipc";
+
+enum Result {
+  RESULT_YES = 0;
+  RESULT_NO = 1;
+  RESULT_FAIL = 2;
+}
+
+message Request {
+  bytes payload = 1;
+}
+
+message Response {
+  Result result = 1;
+}
+
+service Ipc {
+  rpc Process (Request) returns (Response);
+}
