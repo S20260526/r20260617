@@ -2,8 +2,8 @@ package infra
 
 import (
 	"context"
-	"errors"
 	"internal/grpcipc"
+	"os"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -19,7 +19,9 @@ type GrpcIpcClient struct {
 	client     grpcipc.IpcClient
 }
 
-func (g *GrpcIpcClient) tryConnect() grpcipc.IpcClient {
+func NewGrpcIpcClient(socketpath string) *GrpcIpcClient {
+	g := &GrpcIpcClient{socketpath: socketpath}
+
 	conn, err := grpc.NewClient(
 		"unix://"+g.socketpath,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -33,28 +35,14 @@ func (g *GrpcIpcClient) tryConnect() grpcipc.IpcClient {
 			"what", err,
 		)
 
-		return nil
+		os.Exit(1)
 	}
 
-	return grpcipc.NewIpcClient(conn)
-}
-
-func NewGrpcIpcClient(socketpath string) *GrpcIpcClient {
-	g := &GrpcIpcClient{socketpath: socketpath}
-
-	g.tryConnect()
+	g.client = grpcipc.NewIpcClient(conn)
 
 	return g
 }
 
 func (g *GrpcIpcClient) Process(ctx context.Context, rqst *GrpcIpcRequest) (*GrpcIpcResponse, error) {
-	if g.client == nil {
-		g.tryConnect()
-	}
-
-	if g.client == nil {
-		return nil, errors.New("not connected")
-	}
-
 	return g.client.Process(ctx, rqst)
 }
