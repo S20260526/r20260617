@@ -100,7 +100,7 @@ func (q *RMQPull) OpenChannel() error {
 		dlvr, err := chnl.Consume(
 			q.name,
 			"",    // Consumer
-			true,  // Auto-Ack
+			false, // Auto-Ack
 			false, // Exclusive,
 			false, // No-local,
 			false, // No-wait,

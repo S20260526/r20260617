@@ -54,6 +54,8 @@ func goPull(url string) {
 			time.Sleep(time.Second)
 		} else {
 			log.Println("PULL:", d)
+
+			d.Acknowledge()
 		}
 	}
 }
