@@ -44,24 +44,24 @@ type RMQQueue struct {
 	chnl *amqp.Channel
 }
 
-type RMQPush struct {
+type RMQPublishing struct {
 	RMQQueue
 }
 
-type RMQPull struct {
+type RMQConsuming struct {
 	RMQQueue
 	dlvr <-chan amqp.Delivery
 }
 
-func NewRMQPush(name string) *RMQPush {
-	p := &RMQPush{}
+func NewRMQPublishing(name string) *RMQPublishing {
+	p := &RMQPublishing{}
 	p.name = name
 
 	return p
 }
 
-func NewRMQPull(name string) *RMQPull {
-	p := &RMQPull{}
+func NewRMQConsuming(name string) *RMQConsuming {
+	p := &RMQConsuming{}
 	p.name = name
 
 	return p
@@ -75,7 +75,7 @@ func (q *RMQQueue) Connect(url string) error {
 	return err
 }
 
-func (q *RMQPush) OpenChannel() error {
+func (q *RMQPublishing) OpenChannel() error {
 	chnl, err := q.conn.Channel()
 
 	q.chnl = chnl
@@ -83,7 +83,7 @@ func (q *RMQPush) OpenChannel() error {
 	return err
 }
 
-func (q *RMQPull) OpenChannel() error {
+func (q *RMQConsuming) OpenChannel() error {
 	chnl, err := q.conn.Channel()
 
 	if err != nil {
@@ -120,11 +120,11 @@ func (q *RMQPull) OpenChannel() error {
 	return err
 }
 
-func (q *RMQPush) CloseChannel() {
+func (q *RMQPublishing) CloseChannel() {
 	q.chnl.Close()
 }
 
-func (q *RMQPull) CloseChannel() {
+func (q *RMQConsuming) CloseChannel() {
 	q.dlvr = nil
 
 	q.chnl.Close()
@@ -134,7 +134,7 @@ func (q *RMQQueue) Disconnect() {
 	q.conn.Close()
 }
 
-func (q *RMQQueue) Publish(ctx c.Context, msg []byte) error {
+func (q *RMQPublishing) Publish(ctx c.Context, msg []byte) error {
 	return q.chnl.PublishWithContext(
 		ctx,
 		"",
@@ -148,11 +148,7 @@ func (q *RMQQueue) Publish(ctx c.Context, msg []byte) error {
 	)
 }
 
-func (q *RMQQueue) Consume(_ c.Context) (msgqueue.Incoming, error) {
-	return nil, errors.New("penguins do fly, but only by mistake")
-}
-
-func (q *RMQPull) Consume(ctx c.Context) (msgqueue.Incoming, error) {
+func (q *RMQConsuming) Consume(ctx c.Context) (msgqueue.Incoming, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()

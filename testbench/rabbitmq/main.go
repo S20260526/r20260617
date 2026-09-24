@@ -17,7 +17,7 @@ func usage() {
 }
 
 func goPush(url string) {
-	p := msgqueue.NewPusher(url, infra.NewRMQPush("world"))
+	p := msgqueue.NewPusher(url, infra.NewRMQPublishing("world"))
 
 	ctx := context.Background()
 
@@ -41,7 +41,7 @@ func goPush(url string) {
 }
 
 func goPull(url string) {
-	p := msgqueue.NewPuller([]string{url}, infra.NewRMQPull("world"))
+	p := msgqueue.NewPuller([]string{url}, infra.NewRMQConsuming("world"))
 
 	ctx := context.Background()
 

@@ -7,12 +7,12 @@ import (
 type Puller struct {
 	url   []string
 	curr  int
-	queue Queue
+	queue ConsumingQueue
 
 	ready bool
 }
 
-func NewPuller(url []string, queue Queue) *Puller {
+func NewPuller(url []string, queue ConsumingQueue) *Puller {
 	return &Puller{url: url, curr: 0, queue: queue, ready: false}
 }
 

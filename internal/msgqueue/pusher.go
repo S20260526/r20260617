@@ -9,14 +9,14 @@ var notCharged = errors.New("Not charged")
 
 type Pusher struct {
 	url   string
-	queue Queue
+	queue PublishingQueue
 
 	ready bool
 
 	payload []byte
 }
 
-func NewPusher(url string, q Queue) *Pusher {
+func NewPusher(url string, q PublishingQueue) *Pusher {
 	return &Pusher{url: url, queue: q, ready: false, payload: nil}
 }
 

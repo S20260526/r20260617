@@ -15,6 +15,14 @@ type Queue interface {
 	OpenChannel() error
 	CloseChannel()
 	Disconnect()
+}
+
+type PublishingQueue interface {
+	Queue
 	Publish(ctx context.Context, msg []byte) error
+}
+
+type ConsumingQueue interface {
+	Queue
 	Consume(ctx context.Context) (Incoming, error)
 }
