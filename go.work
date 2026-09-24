@@ -2,8 +2,10 @@ go 1.24
 
 use (
 	./internal/infra
-	./internal/msgqueue
 	./internal/grpcipc
+	./internal/msgqueue
+	./internal/storage
 	./testbench/grpcipc
 	./testbench/rabbitmq
+	./testbench/seaweedfs
 )
