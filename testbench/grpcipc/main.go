@@ -31,15 +31,18 @@ func main() {
 		Payload: payload,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 
-	rsps, err := ipc.Process(ctx, rqst)
+		rsps, err := ipc.Process(ctx, rqst)
 
-	if err != nil {
-		log.Println("ERR:", err)
-	} else {
-		log.Println("RSP:", rsps)
+		if err != nil {
+			log.Println("ERR:", err)
+		} else {
+			log.Println("RSP:", rsps)
+		}
+		cancel()
+		time.Sleep(time.Second)
 	}
 
-	cancel()
 }
