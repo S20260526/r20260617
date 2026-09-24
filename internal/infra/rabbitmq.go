@@ -54,17 +54,11 @@ type RMQConsuming struct {
 }
 
 func NewRMQPublishing(name string) *RMQPublishing {
-	p := &RMQPublishing{}
-	p.name = name
-
-	return p
+	return &RMQPublishing{RMQQueue{name: name}}
 }
 
 func NewRMQConsuming(name string) *RMQConsuming {
-	p := &RMQConsuming{}
-	p.name = name
-
-	return p
+	return &RMQConsuming{RMQQueue{name: name}, nil}
 }
 
 func (q *RMQQueue) Connect(url string) error {
