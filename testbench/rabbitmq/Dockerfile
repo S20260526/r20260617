@@ -1,11 +1,10 @@
 FROM golang:alpine AS b
 WORKDIR /b
 
-COPY go.work /b/
-COPY internal/ /b/internal/
-COPY testbench/rabbitmq /b/testbench/rabbitmq/
+COPY . /b/
 
-RUN go build /b/testbench/rabbitmq
+RUN rm internal/infra/grpcipc.go
+RUN go build ./testbench/rabbitmq
 
 FROM scratch
 
