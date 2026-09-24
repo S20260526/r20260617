@@ -53,7 +53,7 @@ func goPull(url string) {
 
 			time.Sleep(time.Second)
 		} else {
-			log.Println("PULL:", d)
+			log.Println("PULL:", d.GetData())
 
 			d.Acknowledge()
 		}
