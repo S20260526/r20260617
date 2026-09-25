@@ -4,7 +4,6 @@ toolchain go1.24.4
 
 use (
 	./internal/app
-	./internal/coprocess
 	./internal/grpcipc
 	./internal/infra
 	./internal/msgqueue

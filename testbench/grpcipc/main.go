@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"internal/app"
-	"internal/coprocess"
 	"internal/infra"
 
 	"log"
@@ -56,7 +55,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cp, err := coprocess.NewPython3(ctx, "testbench/grpcipc/main.py", newipc())
+	cp, err := infra.NewPython3(ctx, "testbench/grpcipc/main.py", newipc())
 
 	if err != nil {
 		log.Fatal("FATAL:", err)
