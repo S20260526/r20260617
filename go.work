@@ -1,5 +1,7 @@
 go 1.24
 
+toolchain go1.24.4
+
 use (
 	./internal/app
 	./internal/coprocess
@@ -10,4 +12,5 @@ use (
 	./testbench/grpcipc
 	./testbench/rabbitmq
 	./testbench/seaweedfs
+	./testbench/registrator
 )
