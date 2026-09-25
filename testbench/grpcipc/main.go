@@ -4,13 +4,13 @@ import (
 	"context"
 	"internal/infra"
 	"os"
+	"os/exec"
 	"time"
 
 	"log"
 )
 
 func main() {
-	socketpath := "/tmp/grpcipc.socket"
 	payload := []byte{}
 
 	switch len(os.Args) {
@@ -18,18 +18,38 @@ func main() {
 	case 1:
 	default:
 		fallthrough
-	case 3:
-		payload = []byte(os.Args[2])
-		fallthrough
 	case 2:
-		socketpath = os.Args[1]
+		payload = []byte(os.Args[1])
 	}
-
-	ipc := infra.NewGrpcIpcClient(socketpath)
 
 	rqst := &infra.GrpcIpcRequest{
 		Payload: payload,
 	}
+
+	tmpfile, err := os.CreateTemp(os.TempDir(), "grpcipc.*")
+
+	if err != nil {
+		log.Fatal("socket name allocate failed:", err)
+	}
+
+	defer tmpfile.Close()
+
+	socketname := tmpfile.Name()
+
+	ipc := infra.NewGrpcIpcClient(socketname)
+
+	cmd := exec.Command(
+		"python3",
+		"testbench/grpcipc/main.py", socketname,
+	)
+
+	err = cmd.Start()
+
+	if err != nil {
+		log.Fatal("cmd start failed:", err)
+	}
+
+	defer cmd.Wait()
 
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -41,8 +61,9 @@ func main() {
 		} else {
 			log.Println("RSP:", rsps)
 		}
+
 		cancel()
+
 		time.Sleep(time.Second)
 	}
-
 }
