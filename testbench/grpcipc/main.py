@@ -10,7 +10,7 @@ import grpc
 import ipc_pb2 as ipc1
 import ipc_pb2_grpc as ipc2
 
-socketname = sys.argv[1] if len(sys.argv) > 2 else '/tmp/grpcipc.socket'
+socketname = sys.argv[1] if len(sys.argv) >= 2 else '/tmp/grpcipc.socket'
 
 if os.path.exists(socketname):
     os.remove(socketname)
