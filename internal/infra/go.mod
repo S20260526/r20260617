@@ -5,12 +5,12 @@ go 1.24
 toolchain go1.24.4
 
 require (
+	github.com/lib/pq v1.12.3
 	github.com/rabbitmq/amqp091-go v1.14.0
 	google.golang.org/grpc v1.79.1
 )
 
 require (
-	github.com/lib/pq v1.12.3 // indirect
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
