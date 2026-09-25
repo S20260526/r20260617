@@ -8,7 +8,7 @@ use (
 	./internal/infra
 	./internal/msgqueue
 	./internal/storage
-	./testbench/grpcipc
+	./testbench/coprocess
 	./testbench/rabbitmq
 	./testbench/seaweedfs
 	./testbench/registrator

@@ -24,10 +24,10 @@ WORKDIR /b
 COPY . /b/
 COPY --from=p /b/golang/internal/grpcipc/ /b/internal/grpcipc/
 
-RUN go build ./testbench/grpcipc
+RUN go build ./testbench/coprocess
 
 FROM scratch
 
-COPY --from=b /b/grpcipc /entry
+COPY --from=b /b/coprocess /entry
 
 ENTRYPOINT ["/entry"]
