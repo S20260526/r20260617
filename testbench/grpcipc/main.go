@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"internal/app"
 	"internal/coprocess"
 	"internal/infra"
 
@@ -31,18 +32,14 @@ func newipc() *ipc {
 	return &ipc{f, infra.NewGrpcIpcClient(f.Name())}
 }
 
-func (i *ipc) Call(ctx context.Context, payload []byte) ([]byte, error) {
-	rqst := &infra.GrpcIpcRequest{
-		Payload: payload,
-	}
-
+func (i *ipc) Call(ctx context.Context, rqst *app.CoprocessRequest) (*app.CoprocessResponse, error) {
 	rsps, err := i.ipc.Process(ctx, rqst)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return []byte(rsps.GetResult().String()), nil
+	return rsps, nil
 }
 
 func main() {
@@ -59,7 +56,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cp, err := coprocess.New(ctx, "testbench/grpcipc/main.py", newipc())
+	cp, err := coprocess.NewPython3(ctx, "testbench/grpcipc/main.py", newipc())
 
 	if err != nil {
 		log.Fatal("FATAL:", err)
@@ -70,12 +67,12 @@ func main() {
 
 		defer c()
 
-		rslt, err := cp.Call(ctx, payload)
+		rslt, err := cp.Call(ctx, &app.CoprocessRequest{Payload: payload})
 
 		if err != nil {
 			log.Println("ERR:", err)
 		} else {
-			log.Println("RSLT:", string(rslt))
+			log.Println("RSLT:", rslt.GetResult().String())
 
 			cancel()
 

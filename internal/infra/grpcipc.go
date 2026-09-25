@@ -2,6 +2,7 @@ package infra
 
 import (
 	"context"
+	"internal/app"
 	"internal/grpcipc"
 	"os"
 
@@ -10,9 +11,6 @@ import (
 
 	"log/slog"
 )
-
-type GrpcIpcRequest = grpcipc.Request
-type GrpcIpcResponse = grpcipc.Response
 
 type GrpcIpcClient struct {
 	socketpath string
@@ -43,6 +41,6 @@ func NewGrpcIpcClient(socketpath string) *GrpcIpcClient {
 	return g
 }
 
-func (g *GrpcIpcClient) Process(ctx context.Context, rqst *GrpcIpcRequest) (*GrpcIpcResponse, error) {
+func (g *GrpcIpcClient) Process(ctx context.Context, rqst *app.CoprocessRequest) (*app.CoprocessResponse, error) {
 	return g.client.Process(ctx, rqst)
 }
