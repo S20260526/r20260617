@@ -2,13 +2,48 @@ package main
 
 import (
 	"context"
+	"internal/coprocess"
 	"internal/infra"
-	"os"
-	"os/exec"
-	"time"
 
 	"log"
+	"os"
+	"time"
 )
+
+type ipc struct {
+	f   *os.File
+	ipc *infra.GrpcIpcClient
+}
+
+func (i *ipc) SocketName() string {
+	return i.f.Name()
+}
+
+func newipc() *ipc {
+	f, err := os.CreateTemp(os.TempDir(), "grpcipc.*")
+
+	if err != nil {
+		log.Fatal("socket name allocate failed:", err)
+	}
+
+	defer f.Close()
+
+	return &ipc{f, infra.NewGrpcIpcClient(f.Name())}
+}
+
+func (i *ipc) Call(ctx context.Context, payload []byte) ([]byte, error) {
+	rqst := &infra.GrpcIpcRequest{
+		Payload: payload,
+	}
+
+	rsps, err := i.ipc.Process(ctx, rqst)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(rsps.GetResult().String()), nil
+}
 
 func main() {
 	payload := []byte{}
@@ -22,48 +57,33 @@ func main() {
 		payload = []byte(os.Args[1])
 	}
 
-	rqst := &infra.GrpcIpcRequest{
-		Payload: payload,
-	}
+	ctx, cancel := context.WithCancel(context.Background())
 
-	tmpfile, err := os.CreateTemp(os.TempDir(), "grpcipc.*")
+	cp, err := coprocess.New(ctx, "testbench/grpcipc/main.py", newipc())
 
 	if err != nil {
-		log.Fatal("socket name allocate failed:", err)
+		log.Fatal("FATAL:", err)
 	}
-
-	defer tmpfile.Close()
-
-	socketname := tmpfile.Name()
-
-	ipc := infra.NewGrpcIpcClient(socketname)
-
-	cmd := exec.Command(
-		"python3",
-		"testbench/grpcipc/main.py", socketname,
-	)
-
-	err = cmd.Start()
-
-	if err != nil {
-		log.Fatal("cmd start failed:", err)
-	}
-
-	defer cmd.Wait()
 
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, c := context.WithTimeout(context.Background(), time.Second)
 
-		rsps, err := ipc.Process(ctx, rqst)
+		defer c()
+
+		rslt, err := cp.Call(ctx, payload)
 
 		if err != nil {
 			log.Println("ERR:", err)
 		} else {
-			log.Println("RSP:", rsps)
-		}
+			log.Println("RSLT:", string(rslt))
 
-		cancel()
+			cancel()
+
+			break
+		}
 
 		time.Sleep(time.Second)
 	}
+
+	cp.Wait()
 }
