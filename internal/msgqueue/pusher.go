@@ -20,6 +20,16 @@ func NewPusher(url string, q PublishingQueue) *Pusher {
 	return &Pusher{url: url, queue: q, ready: false, payload: nil}
 }
 
+func (p *Pusher) Url() string {
+	return p.url
+}
+
+func (p *Pusher) SetUrl(url string) {
+	p.Cleanup()
+
+	p.url = url
+}
+
 func (p *Pusher) Charge(b []byte) {
 	p.payload = b
 }

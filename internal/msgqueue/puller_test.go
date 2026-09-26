@@ -2,6 +2,7 @@ package msgqueue
 
 import (
 	c "context"
+	"slices"
 	"testing"
 )
 
@@ -123,7 +124,7 @@ func TestPullCleanup(t *testing.T) {
 }
 
 func TestPullContext(t *testing.T) {
-	q := &mq{}
+	q := &mq{inData: "1234"}
 
 	p := NewPuller(urls, q)
 
@@ -136,4 +137,69 @@ func TestPullContext(t *testing.T) {
 	if d != nil || err != c.Canceled || q.trace != "cU o C X D " {
 		t.Fatal()
 	}
+}
+
+func TestPullUrl(t *testing.T) {
+	q := &mq{inData: "1234"}
+
+	p := NewPuller(urls, q)
+
+	if !slices.Equal(p.Url(), urls) {
+		t.Fatal()
+	}
+
+	p.SetUrl([]string{"A", "B", "C"})
+
+	if !slices.Equal(p.Url(), []string{"A", "B", "C"}) {
+		t.Fatal()
+	}
+
+	d, err := p.Pull(c.Background())
+
+	if string(d.GetData()) != "1234" || err != nil || q.trace != "cA o C " {
+		t.Fatal()
+	}
+
+	p.SetUrl([]string{"U", "V", "W"})
+
+	if !slices.Equal(p.Url(), []string{"U", "V", "W"}) {
+		t.Fatal()
+	}
+
+	q.inData = "5678"
+
+	d, err = p.Pull(c.Background())
+
+	if string(d.GetData()) != "5678" || err != nil || q.trace != "cA o C X D cU o C " {
+		t.Fatal(q.trace)
+	}
+}
+
+func TestPullUrlsImmutable(t *testing.T) {
+	q := &mq{}
+
+	u := []string{"A", "B", "C"}
+
+	p := NewPuller(u, q)
+
+	u[0] = "Q"
+
+	if !slices.Equal(p.Url(), []string{"A", "B", "C"}) {
+		t.Fatal()
+	}
+
+	p.Url()[0] = "Q"
+
+	if !slices.Equal(p.Url(), []string{"A", "B", "C"}) {
+		t.Fatal()
+	}
+
+	p.SetUrl(u)
+
+	u[0] = "A"
+
+	if !slices.Equal(p.Url(), []string{"Q", "B", "C"}) {
+		t.Fatal()
+	}
+
 }
