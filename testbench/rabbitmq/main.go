@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"internal/infra"
-	"internal/msgqueue"
+	"internal/app/msgqueue"
 	"log"
 
 	"os"

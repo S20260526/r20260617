@@ -4,7 +4,7 @@ import (
 	c "context"
 	"errors"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"internal/msgqueue"
+	"internal/app/msgqueue"
 	"log/slog"
 )
 

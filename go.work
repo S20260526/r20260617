@@ -6,7 +6,7 @@ use (
 	./internal/app
 	./internal/grpcipc
 	./internal/infra
-	./internal/msgqueue
+	./internal/app/msgqueue
 	./internal/storage
 	./testbench/coprocess
 	./testbench/rabbitmq
