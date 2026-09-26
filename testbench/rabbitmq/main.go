@@ -16,8 +16,8 @@ func usage() {
 	os.Exit(1)
 }
 
-func goPush(url string) {
-	p := msgqueue.NewPusher(url, infra.NewRMQPublishing("world"))
+func goPush(conn *infra.RMQConnection, url string) {
+	p := msgqueue.NewPusher(url, infra.NewRMQPublishing(conn, "world"))
 
 	ctx := context.Background()
 
@@ -40,8 +40,8 @@ func goPush(url string) {
 	}
 }
 
-func goPull(url string) {
-	p := msgqueue.NewPuller([]string{url}, infra.NewRMQConsuming("world"))
+func goPull(conn *infra.RMQConnection, url string) {
+	p := msgqueue.NewPuller([]string{url}, infra.NewRMQConsuming(conn, "world"))
 
 	ctx := context.Background()
 
@@ -68,12 +68,14 @@ func main() {
 	url := os.Args[1]
 	mode := os.Args[2]
 
+	conn := infra.NewRMQConnection()
+
 	switch mode {
 	default:
 		usage()
 	case "push":
-		goPush(url)
+		goPush(conn, url)
 	case "pull":
-		goPull(url)
+		goPull(conn, url)
 	}
 }

@@ -38,9 +38,17 @@ func (r RMQIncoming) Reject() {
 	}
 }
 
-type RMQQueue struct {
-	name string
+type RMQConnection struct {
 	conn *amqp.Connection
+}
+
+func NewRMQConnection() *RMQConnection {
+	return &RMQConnection{}
+}
+
+type RMQQueue struct {
+	conn *RMQConnection
+	name string
 	chnl *amqp.Channel
 }
 
@@ -53,24 +61,38 @@ type RMQConsuming struct {
 	dlvr <-chan amqp.Delivery
 }
 
-func NewRMQPublishing(name string) *RMQPublishing {
-	return &RMQPublishing{RMQQueue{name: name}}
-}
-
-func NewRMQConsuming(name string) *RMQConsuming {
-	return &RMQConsuming{RMQQueue{name: name}, nil}
-}
-
-func (q *RMQQueue) Connect(url string) error {
+func (q *RMQConnection) connect(url string) error {
 	conn, err := amqp.Dial(url)
 
-	q.conn = conn
+	if err == nil {
+		q.conn = conn
+	}
 
 	return err
 }
 
+func (q *RMQConnection) channel() (*amqp.Channel, error) {
+	return q.conn.Channel()
+}
+
+func (q *RMQConnection) doClose() {
+	q.conn.Close()
+}
+
+func NewRMQPublishing(conn *RMQConnection, name string) *RMQPublishing {
+	return &RMQPublishing{RMQQueue{conn: conn, name: name}}
+}
+
+func NewRMQConsuming(conn *RMQConnection, name string) *RMQConsuming {
+	return &RMQConsuming{RMQQueue{conn: conn, name: name}, nil}
+}
+
+func (q *RMQQueue) Connect(url string) error {
+	return q.conn.connect(url)
+}
+
 func (q *RMQPublishing) OpenChannel() error {
-	chnl, err := q.conn.Channel()
+	chnl, err := q.conn.channel()
 
 	q.chnl = chnl
 
@@ -78,7 +100,7 @@ func (q *RMQPublishing) OpenChannel() error {
 }
 
 func (q *RMQConsuming) OpenChannel() error {
-	chnl, err := q.conn.Channel()
+	chnl, err := q.conn.channel()
 
 	if err != nil {
 		return err
@@ -125,7 +147,7 @@ func (q *RMQConsuming) CloseChannel() {
 }
 
 func (q *RMQQueue) Disconnect() {
-	q.conn.Close()
+	q.conn.doClose()
 }
 
 func (q *RMQPublishing) Publish(ctx c.Context, msg []byte) error {
