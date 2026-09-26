@@ -7,6 +7,7 @@ toolchain go1.24.4
 require (
 	github.com/lib/pq v1.12.3
 	github.com/rabbitmq/amqp091-go v1.14.0
+	go.etcd.io/etcd/client/v3 v3.6.8
 	google.golang.org/grpc v1.79.1
 )
 
