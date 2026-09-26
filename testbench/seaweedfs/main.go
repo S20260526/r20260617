@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
+	"internal/app"
 	"internal/infra"
 	"log"
 	"time"
 )
 
 func main() {
-	swfs := infra.NewSeaWeedFS("localhost:9333")
+	var swfs app.Storage = infra.NewSeaWeedFS("localhost:9333")
 
 	ctx, cancel := context.WithDeadline(
 		context.Background(),

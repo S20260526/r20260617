@@ -4,10 +4,9 @@ toolchain go1.24.4
 
 use (
 	./internal/app
+	./internal/app/msgqueue
 	./internal/grpcipc
 	./internal/infra
-	./internal/app/msgqueue
-	./internal/storage
 	./testbench/coprocess
 	./testbench/rabbitmq
 	./testbench/seaweedfs
