@@ -174,7 +174,7 @@ var defaultConfig = app.Configuration{
 }
 
 func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configuration, error) {
-	const prefix = "root." // TODO
+	const prefix = "root."
 
 	config := defaultConfig
 
@@ -183,7 +183,7 @@ func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configu
 		"storage":       hostColonPortCI{&config.Storage},
 		"pushing.host":  hostColonPortCI{&config.Pushing.Host},
 		"pushing.queue": stringCI{&config.Pushing.Queue},
-		// TODO pulling host
+		"pulling.host": hostColonPortArrayCI{&config.Pulling.Host},
 		"pulling.queue":      stringCI{&config.Pulling.Queue},
 		"script.dir":         stringCI{&config.ScriptDir},
 		"registrator.driver": stringCI{&config.Registrator.Driver},
