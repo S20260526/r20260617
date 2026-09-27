@@ -65,14 +65,14 @@ func NewEtcd(url string) *Etcd {
 		return nil
 	}
 
-	e := &Etcd{
+	etcd := &Etcd{
 		client: client,
 		config: defaultConfig,
 	}
 
-	c := &e.config
+	c := &etcd.config
 
-	e.itemMap = configItemMap{
+	etcd.itemMap = configItemMap{
 		"input.port":         portCI{&c.InputPort},
 		"storage":            hostColonPortCI{&c.Storage},
 		"pushing.host":       hostColonPortCI{&c.Pushing.Host},
@@ -84,21 +84,21 @@ func NewEtcd(url string) *Etcd {
 		"registrator.dsn":    stringCI{&c.Registrator.Dsn},
 	}
 
-	return e
+	return etcd
 }
 
-func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configuration, error) {
-	resp, err := e.client.Get(ctx, configKeyPrefix, clientv3.WithPrefix())
+func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configuration, error) {
+	resp, err := etcd.client.Get(ctx, configKeyPrefix, clientv3.WithPrefix())
 
 	if err != nil {
-		return e.config, nil, err
+		return etcd.config, nil, err
 	}
 
 	for _, kv := range resp.Kvs {
-		updateConfig(kv.Key, kv.Value, e.itemMap)
+		updateConfig(kv.Key, kv.Value, etcd.itemMap)
 	}
 
-	wchan := e.client.Watch(
+	wchan := etcd.client.Watch(
 		clientv3.WithRequireLeader(ctx), "root.",
 		clientv3.WithPrefix(),
 	)
@@ -115,20 +115,20 @@ func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configu
 					return
 				}
 
-				e.processEtcdEvents(resp.Events)
+				etcd.processEvents(resp.Events)
 
-				ochan <- e.config
+				ochan <- etcd.config
 			}
 		}
 	}()
 
-	return e.config, ochan, nil
+	return etcd.config, ochan, nil
 }
 
-func (e *Etcd) processEtcdEvents(events []*clientv3.Event) {
+func (etcd *Etcd) processEvents(events []*clientv3.Event) {
 	for _, ev := range events {
 		if ev.Type == clientv3.EventTypePut {
-			err := updateConfig(ev.Kv.Key, ev.Kv.Value, e.itemMap)
+			err := updateConfig(ev.Kv.Key, ev.Kv.Value, etcd.itemMap)
 
 			if err != nil {
 				slog.Warn(
