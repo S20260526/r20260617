@@ -142,19 +142,33 @@ func TestUpdateConfig(t *testing.T) {
 		"host.port": hostColonPortCI{&hostPort},
 	}
 
-	updateConfig([]byte("root.port"), []byte("80"), items)
+	if updateConfig([]byte("root.port"), []byte("80"), items) != nil {
+		t.Error()
+	}
 
 	if port != 80 {
 		t.Error()
 	}
 
-	updateConfig([]byte("port"), []byte("8080"), items)
+	if updateConfig([]byte("port"), []byte("8080"), items) != nil {
+		t.Error()
+	}
 
 	if port != 80 {
 		t.Error()
 	}
 
-	updateConfig([]byte("root.host.port"), []byte("host:80"), items)
+	if updateConfig([]byte("root.host.port"), []byte("host:80"), items) != nil {
+		t.Error()
+	}
+
+	if hostPort.Host != "host" || hostPort.Port != 80 {
+		t.Error()
+	}
+
+	if updateConfig([]byte("root.host.port"), []byte("1host:80"), items) == nil {
+		t.Error()
+	}
 
 	if hostPort.Host != "host" || hostPort.Port != 80 {
 		t.Error()

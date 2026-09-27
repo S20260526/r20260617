@@ -36,6 +36,13 @@ type configItem interface {
 	fromString(string) error
 }
 
+type configItemMap map[string]configItem
+
+type configuration struct {
+	config  app.Configuration
+	itemMap configItemMap
+}
+
 type stringCI struct {
 	dst *string
 }
@@ -125,24 +132,34 @@ func (ci hostColonPortArrayCI) fromString(src string) error {
 
 const prefix = "root."
 
-func updateConfig(key []byte, value []byte, items map[string]configItem) {
+func updateConfig(key []byte, value []byte, cfgIM configItemMap) error {
 	skey := string(key)
 
 	if !strings.HasPrefix(skey, prefix) {
-		return
+		return nil
 	}
 
-	it := items[strings.TrimPrefix(skey, prefix)]
+	it := cfgIM[strings.TrimPrefix(skey, prefix)]
 
 	if it != nil {
-		err := it.fromString(string(value))
+		return it.fromString(string(value))
+	}
 
-		if err != nil {
-			slog.Warn(
-				"infra",
-				"where", "config",
-				"what", skey,
-			)
+	return nil
+}
+
+func processEtcdEvents(events []*clientv3.Event, cfgIM configItemMap) {
+	for _, ev := range events {
+		if ev.Type == clientv3.EventTypePut {
+			err := updateConfig(ev.Kv.Key, ev.Kv.Value, cfgIM)
+
+			if err != nil {
+				slog.Warn(
+					"infra",
+					"where", "config",
+					"when", string(ev.Kv.Key),
+				)
+			}
 		}
 	}
 }
@@ -176,28 +193,32 @@ var defaultConfig = app.Configuration{
 func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configuration, error) {
 	const prefix = "root."
 
-	config := defaultConfig
+	var cfg configuration
 
-	items := map[string]configItem{
-		"input.port":         portCI{&config.InputPort},
-		"storage":            hostColonPortCI{&config.Storage},
-		"pushing.host":       hostColonPortCI{&config.Pushing.Host},
-		"pushing.queue":      stringCI{&config.Pushing.Queue},
-		"pulling.host":       hostColonPortArrayCI{&config.Pulling.Host},
-		"pulling.queue":      stringCI{&config.Pulling.Queue},
-		"script.dir":         stringCI{&config.ScriptDir},
-		"registrator.driver": stringCI{&config.Registrator.Driver},
-		"registrator.dsn":    stringCI{&config.Registrator.Dsn},
+	cfg.config = defaultConfig
+
+	c := &cfg.config
+
+	cfg.itemMap = configItemMap{
+		"input.port":         portCI{&c.InputPort},
+		"storage":            hostColonPortCI{&c.Storage},
+		"pushing.host":       hostColonPortCI{&c.Pushing.Host},
+		"pushing.queue":      stringCI{&c.Pushing.Queue},
+		"pulling.host":       hostColonPortArrayCI{&c.Pulling.Host},
+		"pulling.queue":      stringCI{&c.Pulling.Queue},
+		"script.dir":         stringCI{&c.ScriptDir},
+		"registrator.driver": stringCI{&c.Registrator.Driver},
+		"registrator.dsn":    stringCI{&c.Registrator.Dsn},
 	}
 
 	resp, err := e.client.Get(ctx, prefix, clientv3.WithPrefix())
 
 	if err != nil {
-		return app.Configuration{}, nil, err
+		return cfg.config, nil, err
 	}
 
 	for _, kv := range resp.Kvs {
-		updateConfig(kv.Key, kv.Value, items)
+		updateConfig(kv.Key, kv.Value, cfg.itemMap)
 	}
 
 	wchan := e.client.Watch(
@@ -207,7 +228,7 @@ func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configu
 
 	ochan := make(chan app.Configuration)
 
-	go func(cfg app.Configuration) {
+	go func(cfg configuration) {
 		for {
 			select {
 			case <-ctx.Done():
@@ -217,16 +238,12 @@ func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configu
 					return
 				}
 
-				for _, ev := range resp.Events {
-					if ev.Type == clientv3.EventTypePut {
-						updateConfig(ev.Kv.Key, ev.Kv.Value, items)
-					}
-				}
+				processEtcdEvents(resp.Events, cfg.itemMap)
 
-				ochan <- config
+				ochan <- cfg.config
 			}
 		}
-	}(config)
+	}(cfg)
 
-	return config, ochan, nil
+	return cfg.config, ochan, nil
 }
