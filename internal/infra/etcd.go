@@ -37,6 +37,8 @@ var defaultConfig = app.Configuration{
 	},
 }
 
+const configKeyPrefix = "root."
+
 type configItem interface {
 	fromString(string) error
 }
@@ -85,6 +87,76 @@ func NewEtcd(url string) *Etcd {
 	return e
 }
 
+func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configuration, error) {
+	resp, err := e.client.Get(ctx, configKeyPrefix, clientv3.WithPrefix())
+
+	if err != nil {
+		return e.config, nil, err
+	}
+
+	for _, kv := range resp.Kvs {
+		updateConfig(kv.Key, kv.Value, e.itemMap)
+	}
+
+	wchan := e.client.Watch(
+		clientv3.WithRequireLeader(ctx), "root.",
+		clientv3.WithPrefix(),
+	)
+
+	ochan := make(chan app.Configuration)
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case resp, ok := <-wchan:
+				if !ok {
+					return
+				}
+
+				e.processEtcdEvents(resp.Events)
+
+				ochan <- e.config
+			}
+		}
+	}()
+
+	return e.config, ochan, nil
+}
+
+func (e *Etcd) processEtcdEvents(events []*clientv3.Event) {
+	for _, ev := range events {
+		if ev.Type == clientv3.EventTypePut {
+			err := updateConfig(ev.Kv.Key, ev.Kv.Value, e.itemMap)
+
+			if err != nil {
+				slog.Warn(
+					"infra",
+					"where", "config",
+					"when", string(ev.Kv.Key),
+				)
+			}
+		}
+	}
+}
+
+func updateConfig(key []byte, value []byte, cfgIM configItemMap) error {
+	skey := string(key)
+
+	if !strings.HasPrefix(skey, configKeyPrefix) {
+		return nil
+	}
+
+	it := cfgIM[strings.TrimPrefix(skey, configKeyPrefix)]
+
+	if it != nil {
+		return it.fromString(string(value))
+	}
+
+	return nil
+}
+
 type stringCI struct {
 	dst *string
 }
@@ -94,6 +166,8 @@ func (ci stringCI) fromString(src string) error {
 
 	return nil
 }
+
+var hostPortNotMatch = errors.New("host:port pattern not matched")
 
 type portCI struct {
 	dst *int
@@ -118,8 +192,6 @@ type hostColonPortCI struct {
 var hostColonPortPattern = regexp.MustCompile(
 	"^([[:alpha:]][[:alpha:][:digit:]._-]*):([[:digit:]]{1,5})$",
 )
-
-var hostPortNotMatch = errors.New("host:port pattern not matched")
 
 func (ci hostColonPortCI) fromString(src string) error {
 	match := hostColonPortPattern.FindStringSubmatch(src)
@@ -170,76 +242,4 @@ func (ci hostColonPortArrayCI) fromString(src string) error {
 	*ci.dst = buf
 
 	return nil
-}
-
-const configKeyPrefix = "root."
-
-func updateConfig(key []byte, value []byte, cfgIM configItemMap) error {
-	skey := string(key)
-
-	if !strings.HasPrefix(skey, configKeyPrefix) {
-		return nil
-	}
-
-	it := cfgIM[strings.TrimPrefix(skey, configKeyPrefix)]
-
-	if it != nil {
-		return it.fromString(string(value))
-	}
-
-	return nil
-}
-
-func (e *Etcd) processEtcdEvents(events []*clientv3.Event) {
-	for _, ev := range events {
-		if ev.Type == clientv3.EventTypePut {
-			err := updateConfig(ev.Kv.Key, ev.Kv.Value, e.itemMap)
-
-			if err != nil {
-				slog.Warn(
-					"infra",
-					"where", "config",
-					"when", string(ev.Kv.Key),
-				)
-			}
-		}
-	}
-}
-
-func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configuration, error) {
-	resp, err := e.client.Get(ctx, configKeyPrefix, clientv3.WithPrefix())
-
-	if err != nil {
-		return e.config, nil, err
-	}
-
-	for _, kv := range resp.Kvs {
-		updateConfig(kv.Key, kv.Value, e.itemMap)
-	}
-
-	wchan := e.client.Watch(
-		clientv3.WithRequireLeader(ctx), "root.",
-		clientv3.WithPrefix(),
-	)
-
-	ochan := make(chan app.Configuration)
-
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case resp, ok := <-wchan:
-				if !ok {
-					return
-				}
-
-				e.processEtcdEvents(resp.Events)
-
-				ochan <- e.config
-			}
-		}
-	}()
-
-	return e.config, ochan, nil
 }
