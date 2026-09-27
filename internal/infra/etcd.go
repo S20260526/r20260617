@@ -172,16 +172,16 @@ func (ci hostColonPortArrayCI) fromString(src string) error {
 	return nil
 }
 
-const prefix = "root."
+const configKeyPrefix = "root."
 
 func updateConfig(key []byte, value []byte, cfgIM configItemMap) error {
 	skey := string(key)
 
-	if !strings.HasPrefix(skey, prefix) {
+	if !strings.HasPrefix(skey, configKeyPrefix) {
 		return nil
 	}
 
-	it := cfgIM[strings.TrimPrefix(skey, prefix)]
+	it := cfgIM[strings.TrimPrefix(skey, configKeyPrefix)]
 
 	if it != nil {
 		return it.fromString(string(value))
@@ -207,7 +207,7 @@ func (e *Etcd) processEtcdEvents(events []*clientv3.Event) {
 }
 
 func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configuration, error) {
-	resp, err := e.client.Get(ctx, prefix, clientv3.WithPrefix())
+	resp, err := e.client.Get(ctx, configKeyPrefix, clientv3.WithPrefix())
 
 	if err != nil {
 		return e.config, nil, err
