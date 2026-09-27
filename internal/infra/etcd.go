@@ -179,11 +179,11 @@ func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configu
 	config := defaultConfig
 
 	items := map[string]configItem{
-		"input.port":    portCI{&config.InputPort},
-		"storage":       hostColonPortCI{&config.Storage},
-		"pushing.host":  hostColonPortCI{&config.Pushing.Host},
-		"pushing.queue": stringCI{&config.Pushing.Queue},
-		"pulling.host": hostColonPortArrayCI{&config.Pulling.Host},
+		"input.port":         portCI{&config.InputPort},
+		"storage":            hostColonPortCI{&config.Storage},
+		"pushing.host":       hostColonPortCI{&config.Pushing.Host},
+		"pushing.queue":      stringCI{&config.Pushing.Queue},
+		"pulling.host":       hostColonPortArrayCI{&config.Pulling.Host},
 		"pulling.queue":      stringCI{&config.Pulling.Queue},
 		"script.dir":         stringCI{&config.ScriptDir},
 		"registrator.driver": stringCI{&config.Registrator.Driver},
