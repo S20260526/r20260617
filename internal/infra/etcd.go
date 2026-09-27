@@ -11,8 +11,43 @@ import (
 	"strings"
 )
 
+var defaultConfig = app.Configuration{
+	InputPort: 8089,
+	Storage: app.HostColonPort{
+		Host: "localhost", Port: 9333,
+	},
+	Pushing: app.PushingConfiguration{
+		Host: app.HostColonPort{
+			Host: "localhost", Port: 5672,
+		},
+		Queue: "working",
+	},
+	Pulling: app.PullingConfiguration{
+		Host: []app.HostColonPort{
+			app.HostColonPort{
+				Host: "localhost", Port: 5672,
+			},
+		},
+		Queue: "working",
+	},
+	ScriptDir: ".",
+	Registrator: app.RegistratorConfiguration{
+		Driver: "postgres",
+		Dsn:    "host=localhost dbname=testdb sslmode=disable user=postgres password=1234",
+	},
+}
+
+type configItem interface {
+	fromString(string) error
+}
+
+type configItemMap map[string]configItem
+
+
 type Etcd struct {
 	client *clientv3.Client
+	config app.Configuration
+	itemMap configItemMap
 }
 
 func NewEtcd(url string) *Etcd {
@@ -29,18 +64,26 @@ func NewEtcd(url string) *Etcd {
 		return nil
 	}
 
-	return &Etcd{client: client}
-}
+	e := &Etcd{
+		client: client,
+		config: defaultConfig,
+	}
 
-type configItem interface {
-	fromString(string) error
-}
+	c := &e.config
 
-type configItemMap map[string]configItem
+	e.itemMap = configItemMap{
+		"input.port":         portCI{&c.InputPort},
+		"storage":            hostColonPortCI{&c.Storage},
+		"pushing.host":       hostColonPortCI{&c.Pushing.Host},
+		"pushing.queue":      stringCI{&c.Pushing.Queue},
+		"pulling.host":       hostColonPortArrayCI{&c.Pulling.Host},
+		"pulling.queue":      stringCI{&c.Pulling.Queue},
+		"script.dir":         stringCI{&c.ScriptDir},
+		"registrator.driver": stringCI{&c.Registrator.Driver},
+		"registrator.dsn":    stringCI{&c.Registrator.Dsn},
+	}
 
-type configuration struct {
-	config  app.Configuration
-	itemMap configItemMap
+	return e
 }
 
 type stringCI struct {
@@ -148,10 +191,10 @@ func updateConfig(key []byte, value []byte, cfgIM configItemMap) error {
 	return nil
 }
 
-func processEtcdEvents(events []*clientv3.Event, cfgIM configItemMap) {
+func (e *Etcd) processEtcdEvents(events []*clientv3.Event) {
 	for _, ev := range events {
 		if ev.Type == clientv3.EventTypePut {
-			err := updateConfig(ev.Kv.Key, ev.Kv.Value, cfgIM)
+			err := updateConfig(ev.Kv.Key, ev.Kv.Value, e.itemMap)
 
 			if err != nil {
 				slog.Warn(
@@ -164,61 +207,15 @@ func processEtcdEvents(events []*clientv3.Event, cfgIM configItemMap) {
 	}
 }
 
-var defaultConfig = app.Configuration{
-	InputPort: 8089,
-	Storage: app.HostColonPort{
-		Host: "localhost", Port: 9333,
-	},
-	Pushing: app.PushingConfiguration{
-		Host: app.HostColonPort{
-			Host: "localhost", Port: 5672,
-		},
-		Queue: "working",
-	},
-	Pulling: app.PullingConfiguration{
-		Host: []app.HostColonPort{
-			app.HostColonPort{
-				Host: "localhost", Port: 5672,
-			},
-		},
-		Queue: "working",
-	},
-	ScriptDir: ".",
-	Registrator: app.RegistratorConfiguration{
-		Driver: "postgres",
-		Dsn:    "host=localhost dbname=testdb sslmode=disable user=postgres password=1234",
-	},
-}
-
 func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configuration, error) {
-	const prefix = "root."
-
-	var cfg configuration
-
-	cfg.config = defaultConfig
-
-	c := &cfg.config
-
-	cfg.itemMap = configItemMap{
-		"input.port":         portCI{&c.InputPort},
-		"storage":            hostColonPortCI{&c.Storage},
-		"pushing.host":       hostColonPortCI{&c.Pushing.Host},
-		"pushing.queue":      stringCI{&c.Pushing.Queue},
-		"pulling.host":       hostColonPortArrayCI{&c.Pulling.Host},
-		"pulling.queue":      stringCI{&c.Pulling.Queue},
-		"script.dir":         stringCI{&c.ScriptDir},
-		"registrator.driver": stringCI{&c.Registrator.Driver},
-		"registrator.dsn":    stringCI{&c.Registrator.Dsn},
-	}
-
 	resp, err := e.client.Get(ctx, prefix, clientv3.WithPrefix())
 
 	if err != nil {
-		return cfg.config, nil, err
+		return e.config, nil, err
 	}
 
 	for _, kv := range resp.Kvs {
-		updateConfig(kv.Key, kv.Value, cfg.itemMap)
+		updateConfig(kv.Key, kv.Value, e.itemMap)
 	}
 
 	wchan := e.client.Watch(
@@ -228,7 +225,7 @@ func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configu
 
 	ochan := make(chan app.Configuration)
 
-	go func(cfg configuration) {
+	go func() {
 		for {
 			select {
 			case <-ctx.Done():
@@ -238,12 +235,12 @@ func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configu
 					return
 				}
 
-				processEtcdEvents(resp.Events, cfg.itemMap)
+				e.processEtcdEvents(resp.Events)
 
-				ochan <- cfg.config
+				ochan <- e.config
 			}
 		}
-	}(cfg)
+	}()
 
-	return cfg.config, ochan, nil
+	return e.config, ochan, nil
 }
