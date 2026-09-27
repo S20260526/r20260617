@@ -33,7 +33,8 @@ var defaultConfig = app.Configuration{
 	ScriptDir: ".",
 	Registrator: app.RegistratorConfiguration{
 		Driver: "postgres",
-		Dsn:    "host=localhost dbname=testdb sslmode=disable user=postgres password=1234",
+		Dsn: "host=localhost dbname=testdb " +
+			"sslmode=disable user=postgres password=1234",
 	},
 }
 
