@@ -8,6 +8,7 @@ use (
 	./internal/grpcipc
 	./internal/infra
 	./testbench/coprocess
+	./testbench/etcd
 	./testbench/rabbitmq
 	./testbench/seaweedfs
 	./testbench/registrator
