@@ -43,10 +43,9 @@ type configItem interface {
 
 type configItemMap map[string]configItem
 
-
 type Etcd struct {
-	client *clientv3.Client
-	config app.Configuration
+	client  *clientv3.Client
+	config  app.Configuration
 	itemMap configItemMap
 }
 
