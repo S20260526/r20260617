@@ -200,7 +200,10 @@ func (e *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configu
 		updateConfig(kv.Key, kv.Value, items)
 	}
 
-	wchan := e.client.Watch(clientv3.WithRequireLeader(ctx), "root.", clientv3.WithPrefix())
+	wchan := e.client.Watch(
+		clientv3.WithRequireLeader(ctx), "root.",
+		clientv3.WithPrefix(),
+	)
 
 	ochan := make(chan app.Configuration)
 

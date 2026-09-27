@@ -62,11 +62,13 @@ func TestColonHostPortFromString(t *testing.T) {
 
 				switch err {
 				case nil:
-					if tt.host != dst.Host || tt.port != dst.Port {
+					if tt.host != dst.Host ||
+						tt.port != dst.Port {
 						t.Fatal()
 					}
 				case hostPortNotMatch:
-					if tt.host != "" || dst.Host != "1234" || dst.Port != -100 {
+					if tt.host != "" || dst.Host != "1234" ||
+						dst.Port != -100 {
 						t.Fatal()
 					}
 				default:
@@ -86,10 +88,16 @@ func TestHostColonPortArrayFromString(t *testing.T) {
 		{in: "host:80,", err: true}, {in: "host:", err: true},
 		{in: "host:80,1bad.xxx:80", err: true},
 		{in: "", err: false, out: []app.HostColonPort{}},
-		{in: "host:80", err: false, out: []app.HostColonPort{{"host", 80}}},
 		{
-			in: "host:80,ho_st-1.2:8080,ho-st-3.4:443", err: false, out: []app.HostColonPort{
-				{"host", 80}, {"ho_st-1.2", 8080}, {"ho-st-3.4", 443},
+			in: "host:80", err: false,
+			out: []app.HostColonPort{{Host: "host", Port: 80}},
+		},
+		{
+			in: "host:80,ho_st-1.2:8080,ho-st-3.4:443", err: false,
+			out: []app.HostColonPort{
+				{Host: "host", Port: 80},
+				{Host: "ho_st-1.2", Port: 8080},
+				{Host: "ho-st-3.4", Port: 443},
 			},
 		},
 	}
@@ -109,7 +117,9 @@ func TestHostColonPortArrayFromString(t *testing.T) {
 						t.Fatal()
 					}
 				case hostPortNotMatch:
-					if !tt.err || len(dst) != 1 || dst[0].Host != "1234" || dst[0].Port != -100 {
+					if !tt.err || len(dst) != 1 ||
+						dst[0].Host != "1234" ||
+						dst[0].Port != -100 {
 						t.Fatal(tt.err)
 					}
 				default:
