@@ -39,7 +39,8 @@ func (r RMQIncoming) Reject() {
 }
 
 type RMQConnection struct {
-	conn *amqp.Connection
+	ready bool
+	conn  *amqp.Connection
 }
 
 func NewRMQConnection() *RMQConnection {
@@ -62,10 +63,15 @@ type RMQConsuming struct {
 }
 
 func (q *RMQConnection) connect(url string) error {
+	if q.ready {
+		return nil
+	}
+
 	conn, err := amqp.Dial(url)
 
 	if err == nil {
 		q.conn = conn
+		q.ready = true
 	}
 
 	return err
@@ -76,6 +82,8 @@ func (q *RMQConnection) channel() (*amqp.Channel, error) {
 }
 
 func (q *RMQConnection) doClose() {
+	q.ready = false
+
 	q.conn.Close()
 }
 
