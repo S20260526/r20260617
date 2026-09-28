@@ -47,9 +47,7 @@ type configItem interface {
 type configItemMap map[string]configItem
 
 type Etcd struct {
-	client  *clientv3.Client
-	config  app.Configuration
-	itemMap configItemMap
+	client *clientv3.Client
 }
 
 func NewEtcd(url string) *Etcd {
@@ -66,14 +64,22 @@ func NewEtcd(url string) *Etcd {
 		return nil
 	}
 
-	etcd := &Etcd{
-		client: client,
+	return &Etcd{client: client}
+}
+
+type configurationWatcher struct {
+	config  app.Configuration
+	itemMap configItemMap
+}
+
+func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configuration, error) {
+	watcher := &configurationWatcher{
 		config: defaultConfig,
 	}
 
-	c := &etcd.config
+	c := &watcher.config
 
-	etcd.itemMap = configItemMap{
+	watcher.itemMap = configItemMap{
 		"input.port":         portCI{&c.InputPort},
 		"storage":            hostColonPortCI{&c.Storage},
 		"pushing.host":       hostColonPortCI{&c.Pushing.Host},
@@ -85,18 +91,14 @@ func NewEtcd(url string) *Etcd {
 		"registrator.dsn":    stringCI{&c.Registrator.Dsn},
 	}
 
-	return etcd
-}
-
-func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Configuration, error) {
 	resp, err := etcd.client.Get(ctx, configKeyPrefix, clientv3.WithPrefix())
 
 	if err != nil {
-		return etcd.config.Clone(), nil, err
+		return watcher.config.Clone(), nil, err
 	}
 
 	for _, kv := range resp.Kvs {
-		updateConfig(kv.Key, kv.Value, etcd.itemMap)
+		updateConfig(kv.Key, kv.Value, watcher.itemMap)
 	}
 
 	wchan := etcd.client.Watch(
@@ -106,7 +108,7 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 
 	ochan := make(chan app.Configuration)
 
-	go func() {
+	go func(w *configurationWatcher) {
 		for {
 			select {
 			case <-ctx.Done():
@@ -116,20 +118,20 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 					return
 				}
 
-				etcd.processEvents(resp.Events)
+				w.processEvents(resp.Events)
 
-				ochan <- etcd.config.Clone()
+				ochan <- w.config.Clone()
 			}
 		}
-	}()
+	}(watcher)
 
-	return etcd.config.Clone(), ochan, nil
+	return watcher.config.Clone(), ochan, nil
 }
 
-func (etcd *Etcd) processEvents(events []*clientv3.Event) {
+func (watcher *configurationWatcher) processEvents(events []*clientv3.Event) {
 	for _, ev := range events {
 		if ev.Type == clientv3.EventTypePut {
-			err := updateConfig(ev.Kv.Key, ev.Kv.Value, etcd.itemMap)
+			err := updateConfig(ev.Kv.Key, ev.Kv.Value, watcher.itemMap)
 
 			if err != nil {
 				slog.Warn(
