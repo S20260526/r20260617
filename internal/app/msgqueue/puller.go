@@ -2,6 +2,7 @@ package msgqueue
 
 import (
 	"context"
+	"slices"
 )
 
 type Puller struct {
@@ -12,25 +13,18 @@ type Puller struct {
 	ready bool
 }
 
-func copyUrl(in []string) []string {
-	out := make([]string, len(in))
-	copy(out, in)
-
-	return out
-}
-
 func NewPuller(url []string, queue ConsumingQueue) *Puller {
-	return &Puller{url: copyUrl(url), curr: 0, queue: queue, ready: false}
+	return &Puller{url: slices.Clone(url), curr: 0, queue: queue, ready: false}
 }
 
 func (p *Puller) Url() []string {
-	return copyUrl(p.url)
+	return slices.Clone(p.url)
 }
 
 func (p *Puller) SetUrl(url []string) {
 	p.Cleanup()
 
-	p.url = copyUrl(url)
+	p.url = slices.Clone(url)
 }
 
 func (p *Puller) Pull(ctx context.Context) (Incoming, error) {
