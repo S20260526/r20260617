@@ -109,6 +109,8 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 	ochan := make(chan app.Configuration)
 
 	go func(w *configurationWatcher) {
+		defer close(ochan)
+
 		for {
 			select {
 			case <-ctx.Done():
