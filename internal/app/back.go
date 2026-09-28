@@ -50,10 +50,15 @@ func (b *Back) Pull(ctx context.Context) error {
 
 		switch rsps.Result {
 		case CoprocessResultYes:
-			b.Registrator.Put(
+			err = b.Registrator.Put(
 				ctx, b.EventsTable,
 				Event{Timestamp: ord.Timestamp, Id: ord.BlobId},
 			)
+
+			if err != nil {
+				doReject = true
+			}
+
 		case CoprocessResultNo:
 			b.Storage.Delete(ctx, ord.BlobId)
 		default:

@@ -235,7 +235,7 @@ func TestBackCoprocessResultNo(t *testing.T) {
 
 	if q.trace != "COG" || s.trace != "RD" || c.trace != "C" || r.trace != "" ||
 		q.in.acknowledged != "A" {
-		t.Error(q.trace, s.trace, c.trace)
+		t.Error()
 	}
 }
 
@@ -260,6 +260,32 @@ func TestBackCoprocessResultFail(t *testing.T) {
 
 	if q.trace != "COG" || s.trace != "R" || c.trace != "C" || r.trace != "" ||
 		q.in.acknowledged != "R" {
-		t.Error(q.trace, s.trace, c.trace)
+		t.Error()
+	}
+}
+
+func TestBackRegistratorFail(t *testing.T) {
+	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
+
+	q := &mq{payload: string(om)}
+	s := &ms{payload: "1234"}
+	c := &mc{result: CoprocessResultYes}
+	r := &mr{failed: true}
+
+	b := Back{
+		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
+		Storage:     s,
+		Coprocess:   c,
+		Registrator: r,
+	}
+
+	if b.Pull(context.Background()) != fail {
+		t.Fatal()
+	}
+
+	if q.trace != "COG" || s.trace != "R" || c.trace != "C" || r.trace != "P" ||
+		r.recent.Timestamp != tstmp || r.recent.Id != "id1" ||
+		q.in.acknowledged != "R" {
+		t.Error()
 	}
 }
