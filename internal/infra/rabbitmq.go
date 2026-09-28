@@ -6,6 +6,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"internal/app/msgqueue"
 	"log/slog"
+	"sync"
 )
 
 type RMQIncoming struct {
@@ -39,6 +40,7 @@ func (r RMQIncoming) Reject() {
 }
 
 type RMQConnection struct {
+	mutex sync.Mutex
 	ready bool
 	conn  *amqp.Connection
 }
@@ -63,6 +65,10 @@ type RMQConsuming struct {
 }
 
 func (q *RMQConnection) connect(url string) error {
+	q.mutex.Lock()
+
+	defer q.mutex.Unlock()
+
 	if q.ready {
 		return nil
 	}
@@ -78,10 +84,18 @@ func (q *RMQConnection) connect(url string) error {
 }
 
 func (q *RMQConnection) channel() (*amqp.Channel, error) {
+	q.mutex.Lock()
+
+	defer q.mutex.Unlock()
+
 	return q.conn.Channel()
 }
 
 func (q *RMQConnection) doClose() {
+	q.mutex.Lock()
+
+	defer q.mutex.Unlock()
+
 	q.ready = false
 
 	q.conn.Close()
