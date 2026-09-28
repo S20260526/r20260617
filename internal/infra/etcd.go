@@ -92,7 +92,7 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 	resp, err := etcd.client.Get(ctx, configKeyPrefix, clientv3.WithPrefix())
 
 	if err != nil {
-		return etcd.config, nil, err
+		return etcd.config.Clone(), nil, err
 	}
 
 	for _, kv := range resp.Kvs {
@@ -118,12 +118,12 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 
 				etcd.processEvents(resp.Events)
 
-				ochan <- etcd.config
+				ochan <- etcd.config.Clone()
 			}
 		}
 	}()
 
-	return etcd.config, ochan, nil
+	return etcd.config.Clone(), ochan, nil
 }
 
 func (etcd *Etcd) processEvents(events []*clientv3.Event) {

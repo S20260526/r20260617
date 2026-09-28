@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"slices"
 )
 
 type HostColonPort struct {
@@ -36,6 +37,14 @@ type Configuration struct {
 	Pulling     PullingConfiguration
 	ScriptDir   string
 	Registrator RegistratorConfiguration
+}
+
+func (c *Configuration) Clone() Configuration {
+	out := *c
+
+	out.Pulling.Host = slices.Clone(c.Pulling.Host)
+
+	return out
 }
 
 type Configurator interface {
