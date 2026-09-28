@@ -17,16 +17,6 @@ func NewPuller(url []string, queue ConsumingQueue) *Puller {
 	return &Puller{url: slices.Clone(url), curr: 0, queue: queue, ready: false}
 }
 
-func (p *Puller) Url() []string {
-	return slices.Clone(p.url)
-}
-
-func (p *Puller) SetUrl(url []string) {
-	p.Cleanup()
-
-	p.url = slices.Clone(url)
-}
-
 func (p *Puller) Pull(ctx context.Context) (Incoming, error) {
 	var err error
 

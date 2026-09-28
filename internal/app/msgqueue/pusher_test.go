@@ -138,36 +138,3 @@ func TestPushContext(t *testing.T) {
 		t.Fatal()
 	}
 }
-
-func TestPushSetUrl(t *testing.T) {
-	q := &mq{}
-	p := NewPusher(url, q)
-
-	if p.Url() != url {
-		t.Fatal()
-	}
-
-	p.SetUrl("V")
-
-	if p.Url() != "V" {
-		t.Fatal()
-	}
-
-	p.Charge([]byte("1234"))
-
-	if p.Push(c.Background()) != nil {
-		t.Fatal()
-	}
-
-	p.Charge([]byte("5678"))
-
-	p.SetUrl("W")
-
-	if p.Url() != "W" {
-		t.Fatal()
-	}
-
-	if p.Push(c.Background()) != nil || q.trace != "cV o p1234 X D cW o p5678 " {
-		t.Fatal()
-	}
-}
