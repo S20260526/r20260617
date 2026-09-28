@@ -3,10 +3,9 @@ package app
 import (
 	"context"
 	"internal/app/msgqueue"
-	//"time"
 )
 
-type Back struct {
+type Worker struct {
 	Puller      *msgqueue.Puller
 	Storage     Storage
 	Coprocess   Coprocess
@@ -14,8 +13,8 @@ type Back struct {
 	Registrator Registrator
 }
 
-func (b *Back) Pull(ctx context.Context) error {
-	in, err := b.Puller.Pull(ctx)
+func (w *Worker) Pull(ctx context.Context) error {
+	in, err := w.Puller.Pull(ctx)
 
 	if err != nil {
 		return err
@@ -37,21 +36,21 @@ func (b *Back) Pull(ctx context.Context) error {
 		return err
 	}
 
-	blob, err := b.Storage.Read(ctx, ord.BlobId)
+	blob, err := w.Storage.Read(ctx, ord.BlobId)
 
 	if err != nil {
 		return err
 	}
 
-	rsps, err := b.Coprocess.Call(ctx, &CoprocessRequest{Payload: blob})
+	rsps, err := w.Coprocess.Call(ctx, &CoprocessRequest{Payload: blob})
 
 	if err == nil {
 		doReject = false
 
 		switch rsps.Result {
 		case CoprocessResultYes:
-			err = b.Registrator.Put(
-				ctx, b.EventsTable,
+			err = w.Registrator.Put(
+				ctx, w.EventsTable,
 				Event{Timestamp: ord.Timestamp, Id: ord.BlobId},
 			)
 
@@ -60,7 +59,7 @@ func (b *Back) Pull(ctx context.Context) error {
 			}
 
 		case CoprocessResultNo:
-			b.Storage.Delete(ctx, ord.BlobId)
+			w.Storage.Delete(ctx, ord.BlobId)
 		default:
 			doReject = true
 		}

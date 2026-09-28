@@ -58,7 +58,7 @@ func (r *mr) Put(ctx context.Context, table string, event Event) error {
 	return nil
 }
 
-func TestBackOK(t *testing.T) {
+func TestWorkerOK(t *testing.T) {
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
 	q := &mq{payload: string(om)}
@@ -66,7 +66,7 @@ func TestBackOK(t *testing.T) {
 	c := &mc{result: CoprocessResultYes}
 	r := &mr{}
 
-	b := Back{
+	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host:5672"}, q),
 		Storage:     s,
 		Coprocess:   c,
@@ -74,7 +74,7 @@ func TestBackOK(t *testing.T) {
 		Registrator: r,
 	}
 
-	if b.Pull(context.Background()) != nil {
+	if w.Pull(context.Background()) != nil {
 		t.Fatal()
 	}
 
@@ -100,13 +100,13 @@ func TestBackOK(t *testing.T) {
 	}
 }
 
-func TestBackPullFail(t *testing.T) {
+func TestWorkerPullFail(t *testing.T) {
 	q := &mq{payload: "", fail: true}
 	s := &ms{}
 	c := &mc{}
 	r := &mr{}
 
-	b := Back{
+	w := Worker{
 		Puller: msgqueue.NewPuller(
 			[]string{"host1:5672", "host2:5672", "host3:5672"}, q,
 		),
@@ -115,7 +115,7 @@ func TestBackPullFail(t *testing.T) {
 		Registrator: r,
 	}
 
-	if b.Pull(context.Background()) != fail {
+	if w.Pull(context.Background()) != fail {
 		t.Fatal()
 	}
 
@@ -123,11 +123,11 @@ func TestBackPullFail(t *testing.T) {
 		t.Error()
 	}
 
-	if b.Pull(context.Background()) != fail {
+	if w.Pull(context.Background()) != fail {
 		t.Fatal()
 	}
 
-	if b.Pull(context.Background()) != fail {
+	if w.Pull(context.Background()) != fail {
 		t.Fatal()
 	}
 
@@ -140,20 +140,20 @@ func TestBackPullFail(t *testing.T) {
 	}
 }
 
-func TestBackUnmarshalFail(t *testing.T) {
+func TestWorkerUnmarshalFail(t *testing.T) {
 	q := &mq{payload: "[1234"}
 	s := &ms{}
 	c := &mc{}
 	r := &mr{}
 
-	b := Back{
+	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
 		Storage:     s,
 		Coprocess:   c,
 		Registrator: r,
 	}
 
-	if b.Pull(context.Background()) == nil {
+	if w.Pull(context.Background()) == nil {
 		t.Fatal()
 	}
 
@@ -163,7 +163,7 @@ func TestBackUnmarshalFail(t *testing.T) {
 	}
 }
 
-func TestBackStorageFail(t *testing.T) {
+func TestWorkerStorageFail(t *testing.T) {
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
 	q := &mq{payload: string(om)}
@@ -171,14 +171,14 @@ func TestBackStorageFail(t *testing.T) {
 	c := &mc{}
 	r := &mr{}
 
-	b := Back{
+	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
 		Storage:     s,
 		Coprocess:   c,
 		Registrator: r,
 	}
 
-	if b.Pull(context.Background()) != fail {
+	if w.Pull(context.Background()) != fail {
 		t.Fatal()
 	}
 
@@ -188,7 +188,7 @@ func TestBackStorageFail(t *testing.T) {
 	}
 }
 
-func TestBackCoprocessFail(t *testing.T) {
+func TestWorkerCoprocessFail(t *testing.T) {
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
 	q := &mq{payload: string(om)}
@@ -196,14 +196,14 @@ func TestBackCoprocessFail(t *testing.T) {
 	c := &mc{failed: true}
 	r := &mr{}
 
-	b := Back{
+	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
 		Storage:     s,
 		Coprocess:   c,
 		Registrator: r,
 	}
 
-	if b.Pull(context.Background()) != fail {
+	if w.Pull(context.Background()) != fail {
 		t.Fatal()
 	}
 
@@ -213,7 +213,7 @@ func TestBackCoprocessFail(t *testing.T) {
 	}
 }
 
-func TestBackCoprocessResultNo(t *testing.T) {
+func TestWorkerCoprocessResultNo(t *testing.T) {
 
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
@@ -222,14 +222,14 @@ func TestBackCoprocessResultNo(t *testing.T) {
 	c := &mc{result: CoprocessResultNo}
 	r := &mr{}
 
-	b := Back{
+	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
 		Storage:     s,
 		Coprocess:   c,
 		Registrator: r,
 	}
 
-	if b.Pull(context.Background()) != nil {
+	if w.Pull(context.Background()) != nil {
 		t.Fatal()
 	}
 
@@ -239,7 +239,7 @@ func TestBackCoprocessResultNo(t *testing.T) {
 	}
 }
 
-func TestBackCoprocessResultFail(t *testing.T) {
+func TestWorkerCoprocessResultFail(t *testing.T) {
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
 	q := &mq{payload: string(om)}
@@ -247,14 +247,14 @@ func TestBackCoprocessResultFail(t *testing.T) {
 	c := &mc{result: CoprocessResultFail}
 	r := &mr{}
 
-	b := Back{
+	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
 		Storage:     s,
 		Coprocess:   c,
 		Registrator: r,
 	}
 
-	if b.Pull(context.Background()) != nil {
+	if w.Pull(context.Background()) != nil {
 		t.Fatal()
 	}
 
@@ -264,7 +264,7 @@ func TestBackCoprocessResultFail(t *testing.T) {
 	}
 }
 
-func TestBackRegistratorFail(t *testing.T) {
+func TestWorkerRegistratorFail(t *testing.T) {
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
 	q := &mq{payload: string(om)}
@@ -272,14 +272,14 @@ func TestBackRegistratorFail(t *testing.T) {
 	c := &mc{result: CoprocessResultYes}
 	r := &mr{failed: true}
 
-	b := Back{
+	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
 		Storage:     s,
 		Coprocess:   c,
 		Registrator: r,
 	}
 
-	if b.Pull(context.Background()) != fail {
+	if w.Pull(context.Background()) != fail {
 		t.Fatal()
 	}
 
