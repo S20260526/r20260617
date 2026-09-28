@@ -12,7 +12,7 @@ type Front struct {
 	Queue     msgqueue.PublishingQueue
 }
 
-func (f *Front) Handle(ctx context.Context, t time.Time, blob []byte) error {
+func (f *Front) Push(ctx context.Context, t time.Time, blob []byte) error {
 	id, err := f.Storage.Create(ctx, blob)
 
 	if err != nil {

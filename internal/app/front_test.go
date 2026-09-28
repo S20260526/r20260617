@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"errors"
-	"slices"
+	"internal/app/msgqueue"
 	"testing"
 	"time"
 )
@@ -11,11 +11,29 @@ import (
 var fail = errors.New("fail")
 var tstmp = time.Date(2026, 9, 28, 12, 0, 0, 0, time.UTC)
 
+type mi struct {
+	payload      string
+	acknowledged string
+}
+
+func (i *mi) GetData() []byte {
+	return []byte(i.payload)
+}
+
+func (i *mi) Acknowledge() {
+	i.acknowledged = "A"
+}
+
+func (i *mi) Reject() {
+	i.acknowledged = "R"
+}
+
 type mq struct {
-	fail  bool
-	trace string
-	url   string
-	last  []byte
+	fail    bool
+	trace   string
+	url     string
+	payload string
+	in      *mi
 }
 
 func (q *mq) Connect(url string) error {
@@ -40,7 +58,7 @@ func (q *mq) Disconnect() {
 
 func (q *mq) Publish(ctx context.Context, msg []byte) error {
 	q.trace += "P"
-	q.last = slices.Clone(msg)
+	q.payload = string(msg)
 
 	if q.fail {
 		return fail
@@ -49,10 +67,22 @@ func (q *mq) Publish(ctx context.Context, msg []byte) error {
 	return nil
 }
 
+func (q *mq) Consume(ctx context.Context) (msgqueue.Incoming, error) {
+	q.trace += "G"
+
+	if q.fail {
+		return nil, fail
+	}
+
+	q.in = &mi{payload: q.payload}
+
+	return q.in, nil
+}
+
 type ms struct {
-	fail  bool
-	trace string
-	last  string
+	fail    bool
+	trace   string
+	payload string
 }
 
 func (s *ms) Create(ctx context.Context, blob []byte) (string, error) {
@@ -62,15 +92,9 @@ func (s *ms) Create(ctx context.Context, blob []byte) (string, error) {
 		return "", fail
 	}
 
-	s.last = string(blob)
+	s.payload = string(blob)
 
 	return "id1", nil
-}
-
-func (s *ms) Read(ctx context.Context, key string) ([]byte, error) {
-	s.trace += "R"
-
-	return nil, fail
 }
 
 func (s *ms) Delete(ctx context.Context, key string) error {
@@ -91,7 +115,7 @@ func TestFrontOK(t *testing.T) {
 
 	d, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
-	if f.Handle(context.Background(), tstmp, []byte("1234")) != nil {
+	if f.Push(context.Background(), tstmp, []byte("1234")) != nil {
 		t.Fatal()
 	}
 
@@ -99,7 +123,7 @@ func TestFrontOK(t *testing.T) {
 		t.Error()
 	}
 
-	if q.trace != "COPX" || q.url != "host:5672" || !slices.Equal(q.last, d) {
+	if q.trace != "COPX" || q.url != "host:5672" || q.payload != string(d) {
 		t.Error()
 	}
 }
@@ -114,7 +138,7 @@ func TestFrontStoreFail(t *testing.T) {
 		Queue:     q,
 	}
 
-	if f.Handle(context.Background(), tstmp, []byte("1234")) != fail {
+	if f.Push(context.Background(), tstmp, []byte("1234")) != fail {
 		t.Fatal()
 	}
 
@@ -137,7 +161,7 @@ func TestFrontQueueFail(t *testing.T) {
 		Queue:     q,
 	}
 
-	if f.Handle(context.Background(), tstmp, []byte("1234")) != fail {
+	if f.Push(context.Background(), tstmp, []byte("1234")) != fail {
 		t.Fatal()
 	}
 
