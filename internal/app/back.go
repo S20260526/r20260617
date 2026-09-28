@@ -7,9 +7,11 @@ import (
 )
 
 type Back struct {
-	Puller    *msgqueue.Puller
-	Storage   Storage
-	Coprocess Coprocess
+	Puller      *msgqueue.Puller
+	Storage     Storage
+	Coprocess   Coprocess
+	EventsTable string
+	Registrator Registrator
 }
 
 func (b *Back) Pull(ctx context.Context) error {
@@ -44,12 +46,18 @@ func (b *Back) Pull(ctx context.Context) error {
 	rsps, err := b.Coprocess.Call(ctx, &CoprocessRequest{Payload: blob})
 
 	if err == nil {
+		doReject = false
+
 		switch rsps.Result {
+		case CoprocessResultYes:
+			b.Registrator.Put(
+				ctx, b.EventsTable,
+				Event{Timestamp: ord.Timestamp, Id: ord.BlobId},
+			)
 		case CoprocessResultNo:
 			b.Storage.Delete(ctx, ord.BlobId)
-			fallthrough
-		case CoprocessResultYes:
-			doReject = false
+		default:
+			doReject = true
 		}
 	}
 

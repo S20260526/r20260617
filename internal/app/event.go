@@ -6,8 +6,8 @@ import (
 )
 
 type Event struct {
-	T  time.Time
-	Id string
+	Timestamp time.Time
+	Id        string
 }
 
 type Registrator interface {

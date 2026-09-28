@@ -22,7 +22,7 @@ func main() {
 		log.Fatal("ERR:", err)
 	}
 
-	err = r.Put(ctx, "events", app.Event{T: time.Now(), Id: "1234"})
+	err = r.Put(ctx, "events", app.Event{Timestamp: time.Now(), Id: "1234"})
 
 	if err != nil {
 		log.Fatal("ERR:", err)

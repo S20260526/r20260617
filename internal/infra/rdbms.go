@@ -41,7 +41,7 @@ func (p *RDBMS) Put(ctx context.Context, table string, e app.Event) error {
 	_, err := p.db.ExecContext(
 		ctx,
 		fmt.Sprintf("INSERT INTO %s (t, id) VALUES ($1, $2)", table),
-		e.T, e.Id,
+		e.Timestamp, e.Id,
 	)
 
 	return err
