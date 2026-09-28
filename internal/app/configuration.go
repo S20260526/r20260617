@@ -47,6 +47,6 @@ func (c *Configuration) Clone() Configuration {
 	return out
 }
 
-type Configurator interface {
+type ConfigurationWatcher interface {
 	Watch(context.Context) (Configuration, <-chan Configuration, error)
 }
