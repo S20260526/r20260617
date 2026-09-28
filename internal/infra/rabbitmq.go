@@ -159,13 +159,21 @@ func (q *RMQConsuming) OpenChannel() error {
 }
 
 func (q *RMQPublishing) CloseChannel() {
-	q.chnl.Close()
+	if q.chnl != nil {
+		q.chnl.Close()
+
+		q.chnl = nil
+	}
 }
 
 func (q *RMQConsuming) CloseChannel() {
 	q.dlvr = nil
 
-	q.chnl.Close()
+	if q.chnl != nil {
+		q.chnl.Close()
+
+		q.chnl = nil
+	}
 }
 
 func (q *RMQQueue) Disconnect() {
