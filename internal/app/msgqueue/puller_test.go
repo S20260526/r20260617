@@ -5,12 +5,10 @@ import (
 	"testing"
 )
 
-var urls = []string{"U", "V", "W"}
-
 func TestPullOptimistic(t *testing.T) {
-	q := &mq{inData: "1234"}
+	q := &mockQueue{inData: "1234"}
 
-	p := NewPuller(urls, q)
+	p := NewPuller(urlsUVW, q)
 
 	d, err := p.Pull(c.Background())
 
@@ -28,9 +26,9 @@ func TestPullOptimistic(t *testing.T) {
 }
 
 func TestPullConnectFailed(t *testing.T) {
-	q := &mq{inData: "1234", failWith: connectFailed}
+	q := &mockQueue{inData: "1234", failWith: connectFailed}
 
-	p := NewPuller(urls, q)
+	p := NewPuller(urlsUVW, q)
 
 	d, err := p.Pull(c.Background())
 
@@ -62,9 +60,9 @@ func TestPullConnectFailed(t *testing.T) {
 }
 
 func TestPullOpenChannelFailed(t *testing.T) {
-	q := &mq{inData: "1234", failWith: channelOpenFailed}
+	q := &mockQueue{inData: "1234", failWith: channelOpenFailed}
 
-	p := NewPuller(urls, q)
+	p := NewPuller(urlsUVW, q)
 
 	d, err := p.Pull(c.Background())
 
@@ -80,9 +78,9 @@ func TestPullOpenChannelFailed(t *testing.T) {
 }
 
 func TestPullConsumeFailed(t *testing.T) {
-	q := &mq{inData: "1234", failWith: consumeFailed}
+	q := &mockQueue{inData: "1234", failWith: consumeFailed}
 
-	p := NewPuller(urls, q)
+	p := NewPuller(urlsUVW, q)
 
 	d, err := p.Pull(c.Background())
 
@@ -98,9 +96,9 @@ func TestPullConsumeFailed(t *testing.T) {
 }
 
 func TestPullCleanup(t *testing.T) {
-	q := &mq{inData: "1234"}
+	q := &mockQueue{inData: "1234"}
 
-	p := NewPuller(urls, q)
+	p := NewPuller(urlsUVW, q)
 
 	p.Cleanup()
 
@@ -123,9 +121,9 @@ func TestPullCleanup(t *testing.T) {
 }
 
 func TestPullContext(t *testing.T) {
-	q := &mq{inData: "1234"}
+	q := &mockQueue{inData: "1234"}
 
-	p := NewPuller(urls, q)
+	p := NewPuller(urlsUVW, q)
 
 	ctx, cancel := c.WithCancel(c.Background())
 
@@ -139,7 +137,7 @@ func TestPullContext(t *testing.T) {
 }
 
 func TestPullUrlsImmutable(t *testing.T) {
-	q := &mq{inData: "1234"}
+	q := &mockQueue{inData: "1234"}
 
 	u := []string{"A", "B", "C"}
 

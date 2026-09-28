@@ -10,27 +10,30 @@ var channelOpenFailed = errors.New("ECHAN")
 var publishFailed = errors.New("EPBSH")
 var consumeFailed = errors.New("EPULL")
 
-type mi struct {
+var urlU = "U"
+var urlsUVW = []string{"U", "V", "W"}
+
+type mockIncoming struct {
 	data string
 }
 
-func (m mi) GetData() []byte {
+func (m mockIncoming) GetData() []byte {
 	return []byte(m.data)
 }
 
-func (m mi) Acknowledge() {
+func (m mockIncoming) Acknowledge() {
 }
 
-func (m mi) Reject() {
+func (m mockIncoming) Reject() {
 }
 
-type mq struct {
+type mockQueue struct {
 	failWith error
 	inData   string
 	trace    string
 }
 
-func (q *mq) Connect(url string) error {
+func (q *mockQueue) Connect(url string) error {
 	q.trace += "c" + url + " "
 
 	if q.failWith == connectFailed {
@@ -42,7 +45,7 @@ func (q *mq) Connect(url string) error {
 	return nil
 }
 
-func (q *mq) OpenChannel() error {
+func (q *mockQueue) OpenChannel() error {
 	q.trace += "o "
 
 	if q.failWith == channelOpenFailed {
@@ -54,15 +57,15 @@ func (q *mq) OpenChannel() error {
 	return nil
 }
 
-func (q *mq) CloseChannel() {
+func (q *mockQueue) CloseChannel() {
 	q.trace += "X "
 }
 
-func (q *mq) Disconnect() {
+func (q *mockQueue) Disconnect() {
 	q.trace += "D "
 }
 
-func (q *mq) Publish(ctx context.Context, b []byte) error {
+func (q *mockQueue) Publish(ctx context.Context, b []byte) error {
 	q.trace += "p" + string(b) + " "
 
 	if err := ctx.Err(); err != nil {
@@ -78,7 +81,7 @@ func (q *mq) Publish(ctx context.Context, b []byte) error {
 	return nil
 }
 
-func (q *mq) Consume(ctx context.Context) (Incoming, error) {
+func (q *mockQueue) Consume(ctx context.Context) (Incoming, error) {
 	q.trace += "C "
 
 	if err := ctx.Err(); err != nil {
@@ -91,5 +94,5 @@ func (q *mq) Consume(ctx context.Context) (Incoming, error) {
 		return nil, consumeFailed
 	}
 
-	return mi{q.inData}, nil
+	return mockIncoming{q.inData}, nil
 }

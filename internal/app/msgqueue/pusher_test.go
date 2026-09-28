@@ -5,11 +5,9 @@ import (
 	"testing"
 )
 
-var url = "U"
-
 func TestPushOptimistic(t *testing.T) {
-	q := &mq{}
-	p := NewPusher(url, q)
+	q := &mockQueue{}
+	p := NewPusher(urlU, q)
 
 	p.Charge([]byte("1234"))
 
@@ -19,8 +17,8 @@ func TestPushOptimistic(t *testing.T) {
 }
 
 func TestPushConnectFailed(t *testing.T) {
-	q := &mq{failWith: connectFailed}
-	p := NewPusher(url, q)
+	q := &mockQueue{failWith: connectFailed}
+	p := NewPusher(urlU, q)
 
 	p.Charge([]byte("1234"))
 
@@ -34,8 +32,8 @@ func TestPushConnectFailed(t *testing.T) {
 }
 
 func TestPushOpenChannelFailed(t *testing.T) {
-	q := &mq{failWith: channelOpenFailed}
-	p := NewPusher(url, q)
+	q := &mockQueue{failWith: channelOpenFailed}
+	p := NewPusher(urlU, q)
 
 	p.Charge([]byte("1234"))
 
@@ -49,8 +47,8 @@ func TestPushOpenChannelFailed(t *testing.T) {
 }
 
 func TestPushPublishFailed(t *testing.T) {
-	q := &mq{failWith: publishFailed}
-	p := NewPusher(url, q)
+	q := &mockQueue{failWith: publishFailed}
+	p := NewPusher(urlU, q)
 
 	p.Charge([]byte("1234"))
 
@@ -64,8 +62,8 @@ func TestPushPublishFailed(t *testing.T) {
 }
 
 func TestPushCharge(t *testing.T) {
-	q := &mq{}
-	p := NewPusher(url, q)
+	q := &mockQueue{}
+	p := NewPusher(urlU, q)
 
 	if p.Push(c.Background()) != notCharged || q.trace != "" {
 		t.Fatal()
@@ -101,8 +99,8 @@ func TestPushCharge(t *testing.T) {
 }
 
 func TestPushCleanup(t *testing.T) {
-	q := &mq{}
-	p := NewPusher(url, q)
+	q := &mockQueue{}
+	p := NewPusher(urlU, q)
 
 	p.Cleanup()
 
@@ -125,8 +123,8 @@ func TestPushCleanup(t *testing.T) {
 }
 
 func TestPushContext(t *testing.T) {
-	q := &mq{}
-	p := NewPusher(url, q)
+	q := &mockQueue{}
+	p := NewPusher(urlU, q)
 
 	ctx, cancel := c.WithCancel(c.Background())
 

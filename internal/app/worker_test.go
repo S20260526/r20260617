@@ -3,68 +3,16 @@ package app
 import (
 	"context"
 	"internal/app/msgqueue"
-	"internal/grpcipc"
 	"testing"
 )
-
-func (s *ms) Read(ctx context.Context, key string) ([]byte, error) {
-	s.trace += "R"
-
-	if s.fail {
-		return nil, fail
-	}
-
-	return []byte(s.payload), nil
-}
-
-type mc struct {
-	trace   string
-	payload string
-	failed  bool
-	result  CoprocessResult
-}
-
-func (c *mc) Call(ctx context.Context, request *CoprocessRequest) (*CoprocessResponse, error) {
-	c.trace += "C"
-	c.payload = string(request.Payload)
-
-	if c.failed {
-		return nil, fail
-	}
-
-	return &CoprocessResponse{Result: grpcipc.Result(c.result)}, nil
-}
-
-func (c *mc) Wait() error {
-	return fail
-}
-
-type mr struct {
-	trace  string
-	table  string
-	recent Event
-	failed bool
-}
-
-func (r *mr) Put(ctx context.Context, table string, event Event) error {
-	r.trace += "P"
-	r.table = table
-	r.recent = event
-
-	if r.failed {
-		return fail
-	}
-
-	return nil
-}
 
 func TestWorkerOK(t *testing.T) {
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
-	q := &mq{payload: string(om)}
-	s := &ms{payload: "1234"}
-	c := &mc{result: CoprocessResultYes}
-	r := &mr{}
+	q := &mockQueue{payload: string(om)}
+	s := &mockStorage{payload: "1234"}
+	c := &mockCoprocess{result: CoprocessResultYes}
+	r := &mockRegistry{}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host:5672"}, q),
@@ -101,10 +49,10 @@ func TestWorkerOK(t *testing.T) {
 }
 
 func TestWorkerPullFail(t *testing.T) {
-	q := &mq{payload: "", fail: true}
-	s := &ms{}
-	c := &mc{}
-	r := &mr{}
+	q := &mockQueue{payload: "", fail: true}
+	s := &mockStorage{}
+	c := &mockCoprocess{}
+	r := &mockRegistry{}
 
 	w := Worker{
 		Puller: msgqueue.NewPuller(
@@ -141,10 +89,10 @@ func TestWorkerPullFail(t *testing.T) {
 }
 
 func TestWorkerUnmarshalFail(t *testing.T) {
-	q := &mq{payload: "[1234"}
-	s := &ms{}
-	c := &mc{}
-	r := &mr{}
+	q := &mockQueue{payload: "[1234"}
+	s := &mockStorage{}
+	c := &mockCoprocess{}
+	r := &mockRegistry{}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
@@ -166,10 +114,10 @@ func TestWorkerUnmarshalFail(t *testing.T) {
 func TestWorkerStorageFail(t *testing.T) {
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
-	q := &mq{payload: string(om)}
-	s := &ms{fail: true}
-	c := &mc{}
-	r := &mr{}
+	q := &mockQueue{payload: string(om)}
+	s := &mockStorage{fail: true}
+	c := &mockCoprocess{}
+	r := &mockRegistry{}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
@@ -191,10 +139,10 @@ func TestWorkerStorageFail(t *testing.T) {
 func TestWorkerCoprocessFail(t *testing.T) {
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
-	q := &mq{payload: string(om)}
-	s := &ms{payload: "1234"}
-	c := &mc{failed: true}
-	r := &mr{}
+	q := &mockQueue{payload: string(om)}
+	s := &mockStorage{payload: "1234"}
+	c := &mockCoprocess{failed: true}
+	r := &mockRegistry{}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
@@ -217,10 +165,10 @@ func TestWorkerCoprocessResultNo(t *testing.T) {
 
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
-	q := &mq{payload: string(om)}
-	s := &ms{payload: "1234"}
-	c := &mc{result: CoprocessResultNo}
-	r := &mr{}
+	q := &mockQueue{payload: string(om)}
+	s := &mockStorage{payload: "1234"}
+	c := &mockCoprocess{result: CoprocessResultNo}
+	r := &mockRegistry{}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
@@ -242,10 +190,10 @@ func TestWorkerCoprocessResultNo(t *testing.T) {
 func TestWorkerCoprocessResultFail(t *testing.T) {
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
-	q := &mq{payload: string(om)}
-	s := &ms{payload: "1234"}
-	c := &mc{result: CoprocessResultFail}
-	r := &mr{}
+	q := &mockQueue{payload: string(om)}
+	s := &mockStorage{payload: "1234"}
+	c := &mockCoprocess{result: CoprocessResultFail}
+	r := &mockRegistry{}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
@@ -267,10 +215,10 @@ func TestWorkerCoprocessResultFail(t *testing.T) {
 func TestWorkerRegistratorFail(t *testing.T) {
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
-	q := &mq{payload: string(om)}
-	s := &ms{payload: "1234"}
-	c := &mc{result: CoprocessResultYes}
-	r := &mr{failed: true}
+	q := &mockQueue{payload: string(om)}
+	s := &mockStorage{payload: "1234"}
+	c := &mockCoprocess{result: CoprocessResultYes}
+	r := &mockRegistry{failed: true}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
