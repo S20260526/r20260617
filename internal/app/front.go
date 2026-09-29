@@ -7,9 +7,8 @@ import (
 )
 
 type Front struct {
-	BrokerUrl HostColonPort
-	Storage   Storage
-	Queue     msgqueue.PublishingQueue
+	Pusher  *msgqueue.Pusher
+	Storage Storage
 }
 
 func (f *Front) Push(ctx context.Context, t time.Time, blob []byte) error {
@@ -22,11 +21,7 @@ func (f *Front) Push(ctx context.Context, t time.Time, blob []byte) error {
 	om, err := Order{Timestamp: t, BlobId: id}.Marshal()
 
 	if err == nil {
-		p := msgqueue.NewPusher(f.BrokerUrl.String(), f.Queue)
-
-		defer f.Queue.CloseChannel()
-
-		err = p.Push(ctx, om)
+		err = f.Pusher.Push(ctx, om)
 	}
 
 	if err != nil {

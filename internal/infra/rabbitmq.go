@@ -6,7 +6,6 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"internal/app/msgqueue"
 	"log/slog"
-	"sync"
 )
 
 type RMQIncoming struct {
@@ -39,19 +38,9 @@ func (r RMQIncoming) Reject() {
 	}
 }
 
-type RMQConnection struct {
-	mutex sync.Mutex
-	ready bool
-	conn  *amqp.Connection
-}
-
-func NewRMQConnection() *RMQConnection {
-	return &RMQConnection{}
-}
-
 type RMQQueue struct {
-	conn *RMQConnection
 	name string
+	conn *amqp.Connection
 	chnl *amqp.Channel
 }
 
@@ -64,57 +53,28 @@ type RMQConsuming struct {
 	dlvr <-chan amqp.Delivery
 }
 
-func (q *RMQConnection) connect(url string) error {
-	q.mutex.Lock()
-
-	defer q.mutex.Unlock()
-
-	if q.ready {
-		return nil
-	}
-
+func (q *RMQQueue) Connect(url string) error {
 	conn, err := amqp.Dial(url)
 
-	if err == nil {
-		q.conn = conn
-		q.ready = true
-	}
+	q.conn = conn
 
 	return err
 }
 
-func (q *RMQConnection) channel() (*amqp.Channel, error) {
-	q.mutex.Lock()
-
-	defer q.mutex.Unlock()
-
-	return q.conn.Channel()
+func (q *RMQQueue) CloseChannel() {
+	q.chnl.Close()
 }
 
-func (q *RMQConnection) doClose() {
-	q.mutex.Lock()
-
-	defer q.mutex.Unlock()
-
-	q.ready = false
-
-	q.conn.Close()
+func NewRMQPublishing(name string) *RMQPublishing {
+	return &RMQPublishing{RMQQueue{name: name}}
 }
 
-func NewRMQPublishing(conn *RMQConnection, name string) *RMQPublishing {
-	return &RMQPublishing{RMQQueue{conn: conn, name: name}}
-}
-
-func NewRMQConsuming(conn *RMQConnection, name string) *RMQConsuming {
-	return &RMQConsuming{RMQQueue{conn: conn, name: name}, nil}
-}
-
-func (q *RMQQueue) Connect(url string) error {
-	return q.conn.connect(url)
+func NewRMQConsuming(name string) *RMQConsuming {
+	return &RMQConsuming{RMQQueue{name: name}, nil}
 }
 
 func (q *RMQPublishing) OpenChannel() error {
-	chnl, err := q.conn.channel()
+	chnl, err := q.conn.Channel()
 
 	q.chnl = chnl
 
@@ -122,7 +82,9 @@ func (q *RMQPublishing) OpenChannel() error {
 }
 
 func (q *RMQConsuming) OpenChannel() error {
-	chnl, err := q.conn.channel()
+	chnl, err := q.conn.Channel()
+
+	q.chnl = chnl
 
 	if err != nil {
 		return err
@@ -177,7 +139,7 @@ func (q *RMQConsuming) CloseChannel() {
 }
 
 func (q *RMQQueue) Disconnect() {
-	q.conn.doClose()
+	q.conn.Close()
 }
 
 func (q *RMQPublishing) Publish(ctx c.Context, msg []byte) error {

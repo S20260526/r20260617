@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"testing"
+	"internal/app/msgqueue"
 )
 
 func TestFrontOK(t *testing.T) {
@@ -10,9 +11,8 @@ func TestFrontOK(t *testing.T) {
 	q := &mockQueue{}
 
 	f := Front{
-		BrokerUrl: HostColonPort{Host: "host", Port: 5672},
-		Storage:   s,
-		Queue:     q,
+		Pusher:  msgqueue.NewPusher("host:5672", q),
+		Storage: s,
 	}
 
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
@@ -25,8 +25,8 @@ func TestFrontOK(t *testing.T) {
 		t.Error()
 	}
 
-	if q.trace != "COPX" || q.url != "host:5672" || q.payload != string(om) {
-		t.Error()
+	if q.trace != "COP" || q.url != "host:5672" || q.payload != string(om) {
+		t.Error(q.trace)
 	}
 }
 
@@ -35,9 +35,8 @@ func TestFrontStoreFail(t *testing.T) {
 	q := &mockQueue{}
 
 	f := Front{
-		BrokerUrl: HostColonPort{Host: "host", Port: 5672},
-		Storage:   s,
-		Queue:     q,
+		Pusher:  msgqueue.NewPusher("host:5672", q),
+		Storage: s,
 	}
 
 	if f.Push(context.Background(), tstmp, []byte("1234")) != fail {
@@ -58,9 +57,8 @@ func TestFrontQueueFail(t *testing.T) {
 	q := &mockQueue{fail: true}
 
 	f := Front{
-		BrokerUrl: HostColonPort{Host: "host", Port: 5672},
-		Storage:   s,
-		Queue:     q,
+		Pusher:  msgqueue.NewPusher("host:5672", q),
+		Storage: s,
 	}
 
 	if f.Push(context.Background(), tstmp, []byte("1234")) != fail {
@@ -71,7 +69,7 @@ func TestFrontQueueFail(t *testing.T) {
 		t.Error()
 	}
 
-	if q.trace != "COPXDX" || q.url != "host:5672" {
+	if q.trace != "COPXD" || q.url != "host:5672" {
 		t.Error()
 	}
 }
