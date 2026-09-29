@@ -5,16 +5,33 @@ import (
 	"internal/app/msgqueue"
 )
 
+type WorkerMetrics interface {
+	RegIn()
+	RegYes()
+	RegNo()
+	RegFail()
+	RegErr()
+}
+
 type Worker struct {
 	Puller      *msgqueue.Puller
 	Storage     Storage
 	Coprocess   Coprocess
 	EventsTable string
 	Registrator Registrator
+	Metrics     WorkerMetrics
 }
 
 func (w *Worker) Pull(ctx context.Context) error {
+	w.Metrics.RegIn()
+
 	in, err := w.Puller.Pull(ctx)
+
+	defer func() {
+		if err != nil {
+			w.Metrics.RegErr()
+		}
+	}()
 
 	if err != nil {
 		return err
@@ -49,6 +66,8 @@ func (w *Worker) Pull(ctx context.Context) error {
 
 		switch rsps.Result {
 		case CoprocessResultYes:
+			w.Metrics.RegYes()
+
 			err = w.Registrator.Put(
 				ctx, w.EventsTable,
 				Event{Timestamp: ord.Timestamp, Id: ord.BlobId},
@@ -59,8 +78,10 @@ func (w *Worker) Pull(ctx context.Context) error {
 			}
 
 		case CoprocessResultNo:
+			w.Metrics.RegNo()
 			w.Storage.Delete(ctx, ord.BlobId)
 		default:
+			w.Metrics.RegFail()
 			doReject = true
 		}
 	}

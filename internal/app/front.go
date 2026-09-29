@@ -7,14 +7,31 @@ import (
 	"time"
 )
 
+type FrontMetrics interface {
+	RegIn()
+	RegOut()
+	RegErr()
+}
+
 type Front struct {
 	Pusher  *msgqueue.Pusher
 	Storage Storage
+	Metrics FrontMetrics
 	mutex   sync.Mutex
 }
 
 func (f *Front) Push(ctx context.Context, t time.Time, blob []byte) error {
+	f.Metrics.RegIn()
+
 	id, err := f.Storage.Create(ctx, blob)
+
+	defer func() {
+		if err != nil {
+			f.Metrics.RegErr()
+		} else {
+			f.Metrics.RegOut()
+		}
+	}()
 
 	if err != nil {
 		return err

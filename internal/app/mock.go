@@ -162,3 +162,35 @@ func (r *mockRegistry) Put(ctx context.Context, table string, event Event) error
 
 	return nil
 }
+
+type mockMetrics struct {
+	in, out, yes, no, fail, err int
+	duration                    time.Duration
+}
+
+func (m *mockMetrics) RegIn() {
+	m.in++
+}
+
+func (m *mockMetrics) RegOut() {
+	m.out++
+}
+
+func (m *mockMetrics) RegYes() {
+	m.yes++
+}
+func (m *mockMetrics) RegNo() {
+	m.no++
+}
+
+func (m *mockMetrics) RegFail() {
+	m.fail++
+}
+
+func (m *mockMetrics) RegErr() {
+	m.err++
+}
+
+func (m *mockMetrics) RegDuration(d time.Duration) {
+	m.duration = d
+}

@@ -13,6 +13,7 @@ func TestWorkerOK(t *testing.T) {
 	s := &mockStorage{payload: "1234"}
 	c := &mockCoprocess{result: CoprocessResultYes}
 	r := &mockRegistry{}
+	m := &mockMetrics{}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host:5672"}, q),
@@ -20,6 +21,7 @@ func TestWorkerOK(t *testing.T) {
 		Coprocess:   c,
 		EventsTable: "events",
 		Registrator: r,
+		Metrics:     m,
 	}
 
 	if w.Pull(context.Background()) != nil {
@@ -46,6 +48,10 @@ func TestWorkerOK(t *testing.T) {
 	if q.in.acknowledged != "A" {
 		t.Error()
 	}
+
+	if m.in != 1 || m.yes != 1 || m.no != 0 || m.fail != 0 || m.err != 0 {
+		t.Error()
+	}
 }
 
 func TestWorkerPullFail(t *testing.T) {
@@ -53,6 +59,7 @@ func TestWorkerPullFail(t *testing.T) {
 	s := &mockStorage{}
 	c := &mockCoprocess{}
 	r := &mockRegistry{}
+	m := &mockMetrics{}
 
 	w := Worker{
 		Puller: msgqueue.NewPuller(
@@ -61,6 +68,7 @@ func TestWorkerPullFail(t *testing.T) {
 		Storage:     s,
 		Coprocess:   c,
 		Registrator: r,
+		Metrics:     m,
 	}
 
 	if w.Pull(context.Background()) != fail {
@@ -86,6 +94,10 @@ func TestWorkerPullFail(t *testing.T) {
 	if s.trace != "" || c.trace != "" || r.trace != "" {
 		t.Error()
 	}
+
+	if m.in != 3 || m.yes != 0 || m.no != 0 || m.fail != 0 || m.err != 3 {
+		t.Error()
+	}
 }
 
 func TestWorkerUnmarshalFail(t *testing.T) {
@@ -93,12 +105,14 @@ func TestWorkerUnmarshalFail(t *testing.T) {
 	s := &mockStorage{}
 	c := &mockCoprocess{}
 	r := &mockRegistry{}
+	m := &mockMetrics{}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
 		Storage:     s,
 		Coprocess:   c,
 		Registrator: r,
+		Metrics:     m,
 	}
 
 	if w.Pull(context.Background()) == nil {
@@ -107,6 +121,10 @@ func TestWorkerUnmarshalFail(t *testing.T) {
 
 	if q.trace != "COG" || s.trace != "" || c.trace != "" || r.trace != "" ||
 		q.in.acknowledged != "R" {
+		t.Error()
+	}
+
+	if m.in != 1 || m.yes != 0 || m.no != 0 || m.fail != 0 || m.err != 1 {
 		t.Error()
 	}
 }
@@ -118,12 +136,14 @@ func TestWorkerStorageFail(t *testing.T) {
 	s := &mockStorage{fail: true}
 	c := &mockCoprocess{}
 	r := &mockRegistry{}
+	m := &mockMetrics{}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
 		Storage:     s,
 		Coprocess:   c,
 		Registrator: r,
+		Metrics:     m,
 	}
 
 	if w.Pull(context.Background()) != fail {
@@ -132,6 +152,9 @@ func TestWorkerStorageFail(t *testing.T) {
 
 	if q.trace != "COG" || s.trace != "R" || c.trace != "" || r.trace != "" ||
 		q.in.acknowledged != "R" {
+		t.Error()
+	}
+	if m.in != 1 || m.yes != 0 || m.no != 0 || m.fail != 0 || m.err != 1 {
 		t.Error()
 	}
 }
@@ -143,12 +166,14 @@ func TestWorkerCoprocessFail(t *testing.T) {
 	s := &mockStorage{payload: "1234"}
 	c := &mockCoprocess{failed: true}
 	r := &mockRegistry{}
+	m := &mockMetrics{}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
 		Storage:     s,
 		Coprocess:   c,
 		Registrator: r,
+		Metrics:     m,
 	}
 
 	if w.Pull(context.Background()) != fail {
@@ -157,6 +182,9 @@ func TestWorkerCoprocessFail(t *testing.T) {
 
 	if q.trace != "COG" || s.trace != "R" || c.trace != "C" || r.trace != "" ||
 		q.in.acknowledged != "R" {
+		t.Error()
+	}
+	if m.in != 1 || m.yes != 0 || m.no != 0 || m.fail != 0 || m.err != 1 {
 		t.Error()
 	}
 }
@@ -169,12 +197,14 @@ func TestWorkerCoprocessResultNo(t *testing.T) {
 	s := &mockStorage{payload: "1234"}
 	c := &mockCoprocess{result: CoprocessResultNo}
 	r := &mockRegistry{}
+	m := &mockMetrics{}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
 		Storage:     s,
 		Coprocess:   c,
 		Registrator: r,
+		Metrics:     m,
 	}
 
 	if w.Pull(context.Background()) != nil {
@@ -183,6 +213,9 @@ func TestWorkerCoprocessResultNo(t *testing.T) {
 
 	if q.trace != "COG" || s.trace != "RD" || c.trace != "C" || r.trace != "" ||
 		q.in.acknowledged != "A" {
+		t.Error()
+	}
+	if m.in != 1 || m.yes != 0 || m.no != 1 || m.fail != 0 || m.err != 0 {
 		t.Error()
 	}
 }
@@ -194,12 +227,14 @@ func TestWorkerCoprocessResultFail(t *testing.T) {
 	s := &mockStorage{payload: "1234"}
 	c := &mockCoprocess{result: CoprocessResultFail}
 	r := &mockRegistry{}
+	m := &mockMetrics{}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
 		Storage:     s,
 		Coprocess:   c,
 		Registrator: r,
+		Metrics:     m,
 	}
 
 	if w.Pull(context.Background()) != nil {
@@ -208,6 +243,10 @@ func TestWorkerCoprocessResultFail(t *testing.T) {
 
 	if q.trace != "COG" || s.trace != "R" || c.trace != "C" || r.trace != "" ||
 		q.in.acknowledged != "R" {
+		t.Error()
+	}
+
+	if m.in != 1 || m.yes != 0 || m.no != 0 || m.fail != 1 || m.err != 0 {
 		t.Error()
 	}
 }
@@ -219,12 +258,14 @@ func TestWorkerRegistratorFail(t *testing.T) {
 	s := &mockStorage{payload: "1234"}
 	c := &mockCoprocess{result: CoprocessResultYes}
 	r := &mockRegistry{failed: true}
+	m := &mockMetrics{}
 
 	w := Worker{
 		Puller:      msgqueue.NewPuller([]string{"host1:5672"}, q),
 		Storage:     s,
 		Coprocess:   c,
 		Registrator: r,
+		Metrics:     m,
 	}
 
 	if w.Pull(context.Background()) != fail {
@@ -234,6 +275,10 @@ func TestWorkerRegistratorFail(t *testing.T) {
 	if q.trace != "COG" || s.trace != "R" || c.trace != "C" || r.trace != "P" ||
 		r.recent.Timestamp != tstmp || r.recent.Id != "id1" ||
 		q.in.acknowledged != "R" {
+		t.Error()
+	}
+
+	if m.in != 1 || m.yes != 1 || m.no != 0 || m.fail != 0 || m.err != 1 {
 		t.Error()
 	}
 }

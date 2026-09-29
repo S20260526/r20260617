@@ -11,10 +11,12 @@ func TestJanitorOK(t *testing.T) {
 
 	q := &mockQueue{payload: string(om)}
 	s := &mockStorage{payload: "1234"}
+	m := &mockMetrics{}
 
 	j := Janitor{
 		Puller:  msgqueue.NewPuller([]string{"host:5672"}, q),
 		Storage: s,
+		Metrics: m,
 	}
 
 	if j.Pull(context.Background()) != nil {
@@ -32,11 +34,16 @@ func TestJanitorOK(t *testing.T) {
 	if q.in.acknowledged != "A" {
 		t.Error()
 	}
+
+	if m.in != 1 || m.err != 0 {
+		t.Error()
+	}
 }
 
 func TestJanitorPullFail(t *testing.T) {
 	q := &mockQueue{fail: true}
 	s := &mockStorage{}
+	m := &mockMetrics{}
 
 	j := Janitor{
 		Puller: msgqueue.NewPuller(
@@ -47,6 +54,7 @@ func TestJanitorPullFail(t *testing.T) {
 			}, q,
 		),
 		Storage: s,
+		Metrics: m,
 	}
 
 	if j.Pull(context.Background()) == nil {
@@ -76,15 +84,21 @@ func TestJanitorPullFail(t *testing.T) {
 	if s.trace != "" {
 		t.Error()
 	}
+
+	if m.in != 3 || m.err != 3 {
+		t.Error()
+	}
 }
 
 func TestJanitorUnmarshallFail(t *testing.T) {
 	q := &mockQueue{payload: "ABCD"}
 	s := &mockStorage{payload: "1234"}
+	m := &mockMetrics{}
 
 	j := Janitor{
 		Puller:  msgqueue.NewPuller([]string{"host:5672"}, q),
 		Storage: s,
+		Metrics: m,
 	}
 
 	if j.Pull(context.Background()) == nil {
@@ -94,6 +108,10 @@ func TestJanitorUnmarshallFail(t *testing.T) {
 	if q.trace != "COG" || s.trace != "" || q.in.acknowledged != "A" {
 		t.Error()
 	}
+
+	if m.in != 1 || m.err != 1 {
+		t.Error()
+	}
 }
 
 func TestJanitorStorageFail(t *testing.T) {
@@ -101,10 +119,12 @@ func TestJanitorStorageFail(t *testing.T) {
 
 	q := &mockQueue{payload: string(om)}
 	s := &mockStorage{fail: true}
+	m := &mockMetrics{}
 
 	j := Janitor{
 		Puller:  msgqueue.NewPuller([]string{"host1:5672"}, q),
 		Storage: s,
+		Metrics: m,
 	}
 
 	if j.Pull(context.Background()) == nil {
@@ -112,6 +132,10 @@ func TestJanitorStorageFail(t *testing.T) {
 	}
 
 	if q.trace != "COG" || s.trace != "D" || q.in.acknowledged != "A" {
+		t.Error()
+	}
+
+	if m.in != 1 || m.err != 1 {
 		t.Error()
 	}
 }
