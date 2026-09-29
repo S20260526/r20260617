@@ -2,33 +2,20 @@ package msgqueue
 
 import (
 	"context"
-	"errors"
 )
-
-var notCharged = errors.New("Not charged")
 
 type Pusher struct {
 	url   string
 	queue PublishingQueue
 
 	ready bool
-
-	payload []byte
 }
 
 func NewPusher(url string, q PublishingQueue) *Pusher {
-	return &Pusher{url: url, queue: q, ready: false, payload: nil}
+	return &Pusher{url: url, queue: q, ready: false}
 }
 
-func (p *Pusher) Charge(b []byte) {
-	p.payload = b
-}
-
-func (p *Pusher) Push(ctx context.Context) error {
-	if p.payload == nil {
-		return notCharged
-	}
-
+func (p *Pusher) Push(ctx context.Context, payload []byte) error {
 	if !p.ready {
 		err := p.queue.Connect(p.url)
 
@@ -46,15 +33,13 @@ func (p *Pusher) Push(ctx context.Context) error {
 		p.ready = true
 	}
 
-	err := p.queue.Publish(ctx, p.payload)
+	err := p.queue.Publish(ctx, payload)
 
 	if err != nil {
 		p.Cleanup()
 
 		return err
 	}
-
-	p.payload = nil
 
 	return nil
 }

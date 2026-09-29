@@ -26,9 +26,7 @@ func goPush(conn *infra.RMQConnection, url string) {
 	for {
 		log.Println("PUSH", i)
 
-		p.Charge([]byte{i})
-
-		for err := p.Push(ctx); err != nil; err = p.Push(ctx) {
+		for err := p.Push(ctx, []byte{i}); err != nil; err = p.Push(ctx) {
 			log.Println("ERR:", err)
 
 			time.Sleep(time.Second)

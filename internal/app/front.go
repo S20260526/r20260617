@@ -26,9 +26,7 @@ func (f *Front) Push(ctx context.Context, t time.Time, blob []byte) error {
 
 		defer f.Queue.CloseChannel()
 
-		p.Charge(om)
-
-		err = p.Push(ctx)
+		err = p.Push(ctx, om)
 	}
 
 	if err != nil {
