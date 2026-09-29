@@ -30,7 +30,7 @@ func TestWorkerOK(t *testing.T) {
 		t.Error()
 	}
 
-	if s.trace != "R" {
+	if s.trace != "R" || s.key != "id1" {
 		t.Error()
 	}
 

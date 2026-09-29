@@ -6,7 +6,7 @@ import (
 )
 
 func TestFrontOK(t *testing.T) {
-	s := &mockStorage{}
+	s := &mockStorage{key: "id1"}
 	q := &mockQueue{}
 
 	f := Front{
@@ -15,7 +15,7 @@ func TestFrontOK(t *testing.T) {
 		Queue:     q,
 	}
 
-	d, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
+	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
 	if f.Push(context.Background(), tstmp, []byte("1234")) != nil {
 		t.Fatal()
@@ -25,7 +25,7 @@ func TestFrontOK(t *testing.T) {
 		t.Error()
 	}
 
-	if q.trace != "COPX" || q.url != "host:5672" || q.payload != string(d) {
+	if q.trace != "COPX" || q.url != "host:5672" || q.payload != string(om) {
 		t.Error()
 	}
 }
