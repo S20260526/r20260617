@@ -165,7 +165,7 @@ func (r *mockRegistry) Put(ctx context.Context, table string, event Event) error
 
 type mockMetrics struct {
 	in, out, yes, no, fail, err int
-	duration                    time.Duration
+	beginTime                   time.Time
 }
 
 func (m *mockMetrics) RegIn() {
@@ -191,6 +191,6 @@ func (m *mockMetrics) RegErr() {
 	m.err++
 }
 
-func (m *mockMetrics) RegDuration(d time.Duration) {
-	m.duration = d
+func (m *mockMetrics) RegFrontToEndDuration(beginTime time.Time) {
+	m.beginTime = beginTime
 }

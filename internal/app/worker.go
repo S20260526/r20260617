@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"internal/app/msgqueue"
+	"time"
 )
 
 type WorkerMetrics interface {
@@ -11,6 +12,7 @@ type WorkerMetrics interface {
 	RegNo()
 	RegFail()
 	RegErr()
+	RegFrontToEndDuration(beginTime time.Time)
 }
 
 type Worker struct {
@@ -52,6 +54,10 @@ func (w *Worker) Pull(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	defer func() {
+		w.Metrics.RegFrontToEndDuration(ord.Timestamp)
+	}()
 
 	blob, err := w.Storage.Read(ctx, ord.BlobId)
 

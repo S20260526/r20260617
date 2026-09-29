@@ -4,6 +4,7 @@ import (
 	"context"
 	"internal/app/msgqueue"
 	"testing"
+	"time"
 )
 
 func TestWorkerOK(t *testing.T) {
@@ -52,6 +53,10 @@ func TestWorkerOK(t *testing.T) {
 	if m.in != 1 || m.yes != 1 || m.no != 0 || m.fail != 0 || m.err != 0 {
 		t.Error()
 	}
+
+	if m.beginTime != tstmp {
+		t.Error()
+	}
 }
 
 func TestWorkerPullFail(t *testing.T) {
@@ -98,6 +103,12 @@ func TestWorkerPullFail(t *testing.T) {
 	if m.in != 3 || m.yes != 0 || m.no != 0 || m.fail != 0 || m.err != 3 {
 		t.Error()
 	}
+
+	t0 := time.Time{}
+
+	if m.beginTime != t0 {
+		t.Error()
+	}
 }
 
 func TestWorkerUnmarshalFail(t *testing.T) {
@@ -127,6 +138,12 @@ func TestWorkerUnmarshalFail(t *testing.T) {
 	if m.in != 1 || m.yes != 0 || m.no != 0 || m.fail != 0 || m.err != 1 {
 		t.Error()
 	}
+
+	t0 := time.Time{}
+
+	if m.beginTime != t0 {
+		t.Error()
+	}
 }
 
 func TestWorkerStorageFail(t *testing.T) {
@@ -154,7 +171,12 @@ func TestWorkerStorageFail(t *testing.T) {
 		q.in.acknowledged != "R" {
 		t.Error()
 	}
+
 	if m.in != 1 || m.yes != 0 || m.no != 0 || m.fail != 0 || m.err != 1 {
+		t.Error()
+	}
+
+	if m.beginTime != tstmp {
 		t.Error()
 	}
 }
@@ -187,10 +209,13 @@ func TestWorkerCoprocessFail(t *testing.T) {
 	if m.in != 1 || m.yes != 0 || m.no != 0 || m.fail != 0 || m.err != 1 {
 		t.Error()
 	}
+
+	if m.beginTime != tstmp {
+		t.Error()
+	}
 }
 
 func TestWorkerCoprocessResultNo(t *testing.T) {
-
 	om, _ := Order{Timestamp: tstmp, BlobId: "id1"}.Marshal()
 
 	q := &mockQueue{payload: string(om)}
@@ -215,7 +240,12 @@ func TestWorkerCoprocessResultNo(t *testing.T) {
 		q.in.acknowledged != "A" {
 		t.Error()
 	}
+
 	if m.in != 1 || m.yes != 0 || m.no != 1 || m.fail != 0 || m.err != 0 {
+		t.Error()
+	}
+
+	if m.beginTime != tstmp {
 		t.Error()
 	}
 }
@@ -249,6 +279,10 @@ func TestWorkerCoprocessResultFail(t *testing.T) {
 	if m.in != 1 || m.yes != 0 || m.no != 0 || m.fail != 1 || m.err != 0 {
 		t.Error()
 	}
+
+	if m.beginTime != tstmp {
+		t.Error()
+	}
 }
 
 func TestWorkerRegistratorFail(t *testing.T) {
@@ -279,6 +313,10 @@ func TestWorkerRegistratorFail(t *testing.T) {
 	}
 
 	if m.in != 1 || m.yes != 1 || m.no != 0 || m.fail != 0 || m.err != 1 {
+		t.Error()
+	}
+
+	if m.beginTime != tstmp {
 		t.Error()
 	}
 }
