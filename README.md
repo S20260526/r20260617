@@ -56,9 +56,10 @@
 | `root.storage` | `localhost:9333` | Адрес хоста и порт REST-API SeaWeedFS |
 | `root.pushing.host` | `localhost:5672` | Адрес хоста и порт подключения RabbitMQ для сервиса front |
 | `root.pushing.queue` | `working` | Имя очереди RabbitMQ для сервиса front |
-| `root.pulling.host` | `localhost:5672` | Адреса хостов и порты подключения RabbitMQ для сервисов worker (через запятую для нескольких узлов) |
+| `root.pulling.host` | `localhost:5672` | Адреса хостов и порты подключения RabbitMQ для сервисов worker и janitor (через запятую для нескольких узлов) |
 | `root.pulling.queue` | `working` | Имя очереди RabbitMQ для сервисов worker |
 | `root.pulling.dlq` | `DLQ` | Имя очереди DLQ для сервиса janitor |
+| `root.pulling.retry.t | `1s` | Время ожидания после неудачного вытягивания данных из RabbitMQ для сервисов worker и janitor |
 | `root.script.file` | `/dev/null/main.py` | Путь к Python-скрипту сопроцесса |
 | `root.registrator.driver` | `postgres` | Имя драйвера базы данных |
 | `root.registrator.dsn` | `postgres://...` | DSN драйвера базы данных |
