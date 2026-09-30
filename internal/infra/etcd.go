@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var defaultConfig = app.Configuration{
@@ -84,7 +85,11 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 		"registrator.dsn":    stringCI{&c.Registrator.Dsn},
 	}
 
-	resp, err := etcd.client.Get(ctx, configKeyPrefix, clientv3.WithPrefix())
+	getCtx, getCtxCancel := context.WithTimeout(ctx, time.Second * 5)
+
+	defer getCtxCancel()
+
+	resp, err := etcd.client.Get(getCtx, configKeyPrefix, clientv3.WithPrefix())
 
 	if err != nil {
 		return watcher.config.Clone(), nil, err
