@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"internal/app"
 	"internal/app/msgqueue"
@@ -10,10 +9,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -73,34 +69,10 @@ func (h *handler) servePostRoot(r *http.Request) int {
 	return http.StatusAccepted
 }
 
-func newEtcd() (*infra.Etcd, error) {
-	var url = "http://localhost:2379"
-
-	if len(os.Args) >= 2 {
-		url = os.Args[1]
-	}
-
-	slog.Info(
-		"front",
-		"where", "etcd",
-		"when", "args",
-		"what", url,
-	)
-
-	return infra.NewEtcd(url)
-}
-
-func newSigChan() <-chan os.Signal {
-	chn := make(chan os.Signal, 0)
-
-	signal.Notify(chn, syscall.SIGINT, syscall.SIGTERM)
-
-	return chn
-}
-
 func newFront(cfg app.Configuration) *app.Front {
 	return &app.Front{
 		Pusher: &syncPusher{
+			// TODO what about cleanup?
 			Pusher: msgqueue.NewPusher(
 				cfg.Pushing.Host.String(),
 				infra.NewRMQPublishing(cfg.Pushing.Queue),
@@ -132,97 +104,44 @@ func newServer(cfg app.Configuration, h http.Handler) *http.Server {
 	return srv
 }
 
-type mainObj struct {
-	etcd    *infra.Etcd
-	sigChan <-chan os.Signal
-	cfgChan <-chan app.Configuration
-
-	oldCfg app.Configuration
-
-	hndlr *handler
-	srv   *http.Server
-}
-
-func (m *mainObj) mainFunc() error {
-	var err error
-
-	slog.Info("front", "where", "mainonbj", "when", "config", "what", "initing")
-
-	m.etcd, err = newEtcd()
-
-	if err != nil {
-		return err
-	}
-
-	slog.Info("front", "where", "mainonbj", "when", "signotify", "what", "starting")
-
-	m.sigChan = newSigChan()
-
-	slog.Info("front", "where", "mainonbj", "when", "config", "what", "starting")
-
-	etcdCtx, etcdCancel := context.WithCancel(context.Background())
-
-	defer etcdCancel()
-
-	m.oldCfg, m.cfgChan, err = m.etcd.Watch(etcdCtx)
-
-	if err != nil {
-		return err
-	}
-
-	slog.Info("front", "where", "mainonbj", "when", "loop", "what", "starting")
-
-	m.hndlr = &handler{front: newFront(m.oldCfg)}
-	m.srv = newServer(m.oldCfg, m.hndlr)
-
-	for err == nil {
-		err = m.selectCfgSig()
-	}
-
-	slog.Info("front", "where", "mainonbj", "when", "loop", "what", "exit")
-
-	return err
-}
-
-func (m *mainObj) selectCfgSig() error {
-	select {
-	case _ = <-m.sigChan:
-		return errors.New("exit on signal")
-	case newCfg, ok := <-m.cfgChan:
-		if !ok {
-			return errors.New("configuration watcher channel broken")
-		}
-
-		func() {
-			m.hndlr.mutex.Lock()
-
-			defer m.hndlr.mutex.Unlock()
-
-			m.oldCfg = newCfg
-			m.hndlr.front = newFront(newCfg)
-		}()
-
-		if newCfg.InputPort != m.oldCfg.InputPort {
-			m.srv.Shutdown(context.Background())
-
-			m.srv = newServer(newCfg, m.hndlr)
-		}
-	}
-
-	return nil
-}
-
 func main() {
-	m := mainObj{}
+	var hndlr *handler
+	var srv *http.Server
+	var oldCfg app.Configuration
 
-	err := m.mainFunc()
+	m := infra.MainObj{
+		Tag: "front",
+		Setup: func(cfg app.Configuration) error {
+			hndlr = &handler{front: newFront(cfg)}
+			srv = newServer(cfg, hndlr)
+			oldCfg = cfg
+
+			return nil
+		},
+		Reinit: func(newCfg app.Configuration) error {
+
+			func() {
+				hndlr.mutex.Lock()
+
+				defer hndlr.mutex.Unlock()
+
+				oldCfg = newCfg
+				hndlr.front = newFront(newCfg)
+			}()
+
+			if newCfg.InputPort != oldCfg.InputPort {
+				srv.Shutdown(context.Background())
+
+				srv = newServer(newCfg, hndlr)
+			}
+
+			return nil
+		},
+	}
+
+	err := m.MainFunc()
 
 	if err != nil {
-		slog.Info(
-			"front",
-			"where", "main",
-			"when", "main loop",
-			"what", err,
-		)
+		slog.Info("front", "where", "main", "when", "main", "what", err)
 	}
 }

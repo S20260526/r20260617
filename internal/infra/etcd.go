@@ -85,7 +85,7 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 		"registrator.dsn":    stringCI{&c.Registrator.Dsn},
 	}
 
-	getCtx, getCtxCancel := context.WithTimeout(ctx, time.Second * 5)
+	getCtx, getCtxCancel := context.WithTimeout(ctx, time.Second*5)
 
 	defer getCtxCancel()
 
