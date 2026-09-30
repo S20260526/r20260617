@@ -75,7 +75,7 @@ func newWorker(ctx context.Context, cfg app.Configuration) error {
 	}
 
 	go func() {
-		for ctx.Err() != nil {
+		for ctx.Err() == nil {
 			err := w.Pull(ctx)
 
 			if err != nil {

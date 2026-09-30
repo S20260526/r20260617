@@ -19,7 +19,7 @@ func newJanitor(ctx context.Context, cfg app.Configuration) {
 	}
 
 	go func() {
-		for ctx.Err() != nil {
+		for ctx.Err() == nil {
 			err := j.Pull(ctx)
 
 			if err != nil {

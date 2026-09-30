@@ -16,8 +16,8 @@ func usage() {
 	os.Exit(1)
 }
 
-func goPush(conn *infra.RMQConnection, url string) {
-	p := msgqueue.NewPusher(url, infra.NewRMQPublishing(conn, "world"))
+func goPush(url string) {
+	p := msgqueue.NewPusher(url, infra.NewRMQPublishing("world"))
 
 	ctx := context.Background()
 
@@ -26,7 +26,9 @@ func goPush(conn *infra.RMQConnection, url string) {
 	for {
 		log.Println("PUSH", i)
 
-		for err := p.Push(ctx, []byte{i}); err != nil; err = p.Push(ctx) {
+		b := []byte{i}
+
+		for err := p.Push(ctx, b); err != nil; err = p.Push(ctx, b) {
 			log.Println("ERR:", err)
 
 			time.Sleep(time.Second)
@@ -38,8 +40,8 @@ func goPush(conn *infra.RMQConnection, url string) {
 	}
 }
 
-func goPull(conn *infra.RMQConnection, url string) {
-	p := msgqueue.NewPuller([]string{url}, infra.NewRMQConsuming(conn, "world"))
+func goPull(url string) {
+	p := msgqueue.NewPuller([]string{url}, infra.NewRMQConsuming("world"))
 
 	ctx := context.Background()
 
@@ -66,14 +68,12 @@ func main() {
 	url := os.Args[1]
 	mode := os.Args[2]
 
-	conn := infra.NewRMQConnection()
-
 	switch mode {
 	default:
 		usage()
 	case "push":
-		goPush(conn, url)
+		goPush(url)
 	case "pull":
-		goPull(conn, url)
+		goPull(url)
 	}
 }

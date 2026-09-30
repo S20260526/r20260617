@@ -113,7 +113,7 @@ func main() {
 		Tag: "front",
 		Setup: func(cfg app.Configuration) error {
 			h = &handler{front: newFront(cfg)}
-			s = newServer(cfg, hndlr)
+			s = newServer(cfg, h)
 			oldCfg = cfg
 
 			return nil
