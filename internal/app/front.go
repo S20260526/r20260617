@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-	"internal/app/msgqueue"
-	"sync"
 	"time"
 )
 
@@ -13,11 +11,14 @@ type FrontMetrics interface {
 	RegErr()
 }
 
+type Pusher interface {
+	Push(ctx context.Context, blob []byte) error
+}
+
 type Front struct {
-	Pusher  *msgqueue.Pusher
+	Pusher  Pusher
 	Storage Storage
 	Metrics FrontMetrics
-	mutex   sync.Mutex
 }
 
 func (f *Front) Push(ctx context.Context, t time.Time, blob []byte) error {
@@ -40,12 +41,7 @@ func (f *Front) Push(ctx context.Context, t time.Time, blob []byte) error {
 	om, err := Order{Timestamp: t, BlobId: id}.Marshal()
 
 	if err == nil {
-		func() {
-			f.mutex.Lock()
-			defer f.mutex.Unlock()
-
-			err = f.Pusher.Push(ctx, om)
-		}()
+		err = f.Pusher.Push(ctx, om)
 	}
 
 	if err != nil {

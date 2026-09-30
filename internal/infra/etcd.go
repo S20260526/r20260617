@@ -50,21 +50,14 @@ type Etcd struct {
 	client *clientv3.Client
 }
 
-func NewEtcd(url string) *Etcd {
+func NewEtcd(url string) (*Etcd, error) {
 	client, err := clientv3.NewFromURL(url)
 
 	if err != nil {
-		slog.Warn(
-			"infra",
-			"where", "config",
-			"when", "create",
-			"what", err,
-		)
-
-		return nil
+		return nil, err
 	}
 
-	return &Etcd{client: client}
+	return &Etcd{client: client}, nil
 }
 
 type configurationWatcher struct {

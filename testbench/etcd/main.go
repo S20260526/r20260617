@@ -8,11 +8,15 @@ import (
 )
 
 func main() {
-	var w app.ConfigurationWatcher = infra.NewEtcd("http://127.0.0.1:2379")
+	var w app.ConfigurationWatcher
 
-	ctx := context.Background()
+	w, err := infra.NewEtcd("http://127.0.0.1:2379")
 
-	cfg, wchan, err := w.Watch(ctx)
+	if err != nil {
+		log.Fatal("ERR:", err)
+	}
+
+	cfg, wchan, err := w.Watch(context.Background())
 
 	if err != nil {
 		log.Fatal("ERR:", err)
