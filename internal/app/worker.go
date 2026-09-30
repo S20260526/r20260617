@@ -15,8 +15,12 @@ type WorkerMetrics interface {
 	RegFrontToEndDuration(beginTime time.Time)
 }
 
+type Puller interface {
+	Pull(ctx context.Context) (msgqueue.Incoming, error)
+}
+
 type Worker struct {
-	Puller      *msgqueue.Puller
+	Puller      Puller
 	Storage     Storage
 	Coprocess   Coprocess
 	EventsTable string

@@ -4,6 +4,7 @@ toolchain go1.24.4
 
 use (
 	./cmd/front
+	./cmd/worker
 
 	./internal/app
 	./internal/app/msgqueue

@@ -31,7 +31,7 @@ var defaultConfig = app.Configuration{
 		},
 		Queue: "working",
 	},
-	ScriptDir: ".",
+	ScriptFile: "/dev/null/main.py",
 	Registrator: app.RegistratorConfiguration{
 		Driver: "postgres",
 		Dsn: "host=localhost dbname=testdb " +
@@ -80,7 +80,7 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 		"pushing.queue":      stringCI{&c.Pushing.Queue},
 		"pulling.host":       hostColonPortArrayCI{&c.Pulling.Host},
 		"pulling.queue":      stringCI{&c.Pulling.Queue},
-		"script.dir":         stringCI{&c.ScriptDir},
+		"script.file":         stringCI{&c.ScriptFile},
 		"registrator.driver": stringCI{&c.Registrator.Driver},
 		"registrator.dsn":    stringCI{&c.Registrator.Dsn},
 	}

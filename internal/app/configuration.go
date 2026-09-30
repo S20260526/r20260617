@@ -35,7 +35,7 @@ type Configuration struct {
 	Storage     HostColonPort
 	Pushing     PushingConfiguration
 	Pulling     PullingConfiguration
-	ScriptDir   string
+	ScriptFile  string
 	Registrator RegistratorConfiguration
 }
 

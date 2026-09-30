@@ -45,7 +45,15 @@ func (m *MainObj) newSigChan() <-chan os.Signal {
 	return chn
 }
 
-func (m *MainObj) MainFunc() error {
+func (m *MainObj) MainFunc() {
+	err := m.mainFunc()
+
+	if err != nil {
+		slog.Info(m.Tag, "where", "main", "when", "main", "what", err)
+	}
+}
+
+func (m *MainObj) mainFunc() error {
 	var err error
 
 	slog.Info(m.Tag, "where", "mainfunc", "when", "config", "what", "initing")
@@ -76,7 +84,9 @@ func (m *MainObj) MainFunc() error {
 
 	slog.Info(m.Tag, "where", "mainonbj", "when", "loop", "what", "starting")
 
-	err = m.Setup(cfg)
+	if m.Setup != nil {
+		err = m.Setup(cfg)
+	}
 
 	for err == nil {
 		err = m.selectCfgSig()
@@ -96,7 +106,9 @@ func (m *MainObj) selectCfgSig() error {
 			return errors.New("configuration watcher channel broken")
 		}
 
-		m.Reinit(cfg)
+		if m.Reinit != nil {
+			m.Reinit(cfg)
+		}
 	}
 
 	return nil

@@ -105,15 +105,15 @@ func newServer(cfg app.Configuration, h http.Handler) *http.Server {
 }
 
 func main() {
-	var hndlr *handler
-	var srv *http.Server
+	var h *handler
+	var s *http.Server
 	var oldCfg app.Configuration
 
 	m := infra.MainObj{
 		Tag: "front",
 		Setup: func(cfg app.Configuration) error {
-			hndlr = &handler{front: newFront(cfg)}
-			srv = newServer(cfg, hndlr)
+			h = &handler{front: newFront(cfg)}
+			s = newServer(cfg, hndlr)
 			oldCfg = cfg
 
 			return nil
@@ -121,27 +121,23 @@ func main() {
 		Reinit: func(newCfg app.Configuration) error {
 
 			func() {
-				hndlr.mutex.Lock()
+				h.mutex.Lock()
 
-				defer hndlr.mutex.Unlock()
+				defer h.mutex.Unlock()
 
 				oldCfg = newCfg
-				hndlr.front = newFront(newCfg)
+				h.front = newFront(newCfg)
 			}()
 
 			if newCfg.InputPort != oldCfg.InputPort {
-				srv.Shutdown(context.Background())
+				s.Shutdown(context.Background())
 
-				srv = newServer(newCfg, hndlr)
+				s = newServer(newCfg, h)
 			}
 
 			return nil
 		},
 	}
 
-	err := m.MainFunc()
-
-	if err != nil {
-		slog.Info("front", "where", "main", "when", "main", "what", err)
-	}
+	m.MainFunc()
 }
