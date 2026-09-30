@@ -15,14 +15,24 @@ func (h HostColonPort) String() string {
 	return fmt.Sprintf("%s:%d", h.Host, h.Port)
 }
 
+func HostPortStrings(in []HostColonPort) []string {
+	var out []string
+
+	for _, it := range in {
+		out = append(out, it.String())
+	}
+
+	return out
+}
+
 type PushingConfiguration struct {
 	Host  HostColonPort
 	Queue string
 }
 
 type PullingConfiguration struct {
-	Host  []HostColonPort
-	Queue string
+	Host       []HostColonPort
+	Queue, DLQ string
 }
 
 type RegistratorConfiguration struct {

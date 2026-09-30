@@ -9,16 +9,6 @@ import (
 	"os"
 )
 
-func hostPortStrings(in []app.HostColonPort) []string {
-	var out []string
-
-	for _, it := range in {
-		out = append(out, it.String())
-	}
-
-	return out
-}
-
 type ipc struct {
 	filename string
 	ipc      *infra.GrpcIpcClient
@@ -74,7 +64,7 @@ func newWorker(ctx context.Context, cfg app.Configuration) error {
 
 	w := app.Worker{
 		Puller: msgqueue.NewPuller(
-			hostPortStrings(cfg.Pulling.Host),
+			app.HostPortStrings(cfg.Pulling.Host),
 			infra.NewRMQConsuming(cfg.Pulling.Queue),
 		),
 		Storage:     infra.NewSeaWeedFS(cfg.Storage.String()),
