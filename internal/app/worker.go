@@ -17,6 +17,7 @@ type WorkerMetrics interface {
 
 type Puller interface {
 	Pull(ctx context.Context) (msgqueue.Incoming, error)
+	Cleanup()
 }
 
 type Worker struct {

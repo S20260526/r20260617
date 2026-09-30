@@ -6,9 +6,14 @@ import (
 	"internal/app/msgqueue"
 	"internal/infra"
 	"log/slog"
+	"sync"
 )
 
+var barrier sync.WaitGroup
+
 func newJanitor(ctx context.Context, cfg app.Configuration) {
+	barrier.Add(1)
+
 	j := app.Janitor{
 		Puller: msgqueue.NewPuller(
 			app.HostPortUrls(cfg.Pulling.Host, "amqp://"),
@@ -31,6 +36,17 @@ func newJanitor(ctx context.Context, cfg app.Configuration) {
 				)
 			}
 		}
+
+		j.Puller.Cleanup()
+
+		slog.Info(
+			"janitor",
+			"where", "Cleanup",
+			"when", "Cleanup",
+			"what", "completed",
+		)
+
+		barrier.Done()
 	}()
 }
 
@@ -58,4 +74,6 @@ func main() {
 	m.MainFunc()
 
 	cancel()
+
+	barrier.Wait()
 }

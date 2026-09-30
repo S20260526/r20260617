@@ -14,6 +14,7 @@ import (
 
 type GrpcIpcClient struct {
 	socketpath string
+	conn       *grpc.ClientConn
 	client     grpcipc.IpcClient
 }
 
@@ -43,4 +44,17 @@ func NewGrpcIpcClient(socketpath string) *GrpcIpcClient {
 
 func (g *GrpcIpcClient) Process(ctx context.Context, rqst *app.CoprocessRequest) (*app.CoprocessResponse, error) {
 	return g.client.Process(ctx, rqst)
+}
+
+func (g *GrpcIpcClient) Close() {
+	err := g.conn.Close()
+
+	if err != nil {
+		slog.Warn(
+			"infra",
+			"where", "gRPC-IPC",
+			"when", "Client close",
+			"what", err,
+		)
+	}
 }

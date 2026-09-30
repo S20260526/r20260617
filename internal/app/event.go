@@ -12,4 +12,5 @@ type Event struct {
 
 type Registrator interface {
 	Put(ctx context.Context, table string, event Event) error
+	Cleanup()
 }

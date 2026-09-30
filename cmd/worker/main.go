@@ -7,7 +7,10 @@ import (
 	"internal/infra"
 	"log/slog"
 	"os"
+	"sync"
 )
+
+var barrier sync.WaitGroup
 
 type ipc struct {
 	filename string
@@ -74,6 +77,8 @@ func newWorker(ctx context.Context, cfg app.Configuration) error {
 		Metrics:     infra.NewPrometrics(),
 	}
 
+	barrier.Add(1)
+
 	go func() {
 		for ctx.Err() == nil {
 			err := w.Pull(ctx)
@@ -87,6 +92,19 @@ func newWorker(ctx context.Context, cfg app.Configuration) error {
 				)
 			}
 		}
+
+		w.Puller.Cleanup()
+		w.Coprocess.Wait()
+		w.Registrator.Cleanup()
+
+		slog.Info(
+			"worker",
+			"where", "Cleanup",
+			"when", "Cleanup",
+			"what", "completed",
+		)
+
+		barrier.Done()
 	}()
 
 	return nil
@@ -112,4 +130,6 @@ func main() {
 	m.MainFunc()
 
 	cancel()
+
+	barrier.Wait()
 }

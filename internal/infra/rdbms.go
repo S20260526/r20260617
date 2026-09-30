@@ -7,6 +7,7 @@ import (
 	"fmt"
 	_ "github.com/lib/pq"
 	"internal/app"
+	"log/slog"
 	"regexp"
 )
 
@@ -45,4 +46,17 @@ func (p *RDBMS) Put(ctx context.Context, table string, e app.Event) error {
 	)
 
 	return err
+}
+
+func (p *RDBMS) Cleanup() {
+	err := p.db.Close()
+
+	if err != nil {
+		slog.Warn(
+			"infra",
+			"where", "DB",
+			"when", "cleanup",
+			"what", err,
+		)
+	}
 }

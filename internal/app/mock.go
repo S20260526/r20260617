@@ -163,6 +163,9 @@ func (r *mockRegistry) Put(ctx context.Context, table string, event Event) error
 	return nil
 }
 
+func (r *mockRegistry) Cleanup() {
+}
+
 type mockMetrics struct {
 	in, out, yes, no, fail, err int
 	beginTime                   time.Time

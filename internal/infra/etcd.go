@@ -130,6 +130,19 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 	return watcher.config.Clone(), ochan, nil
 }
 
+func (etcd *Etcd) Close () {
+	err := etcd.client.Close()
+
+	if err != nil {
+		slog.Warn(
+			"infra",
+			"where", "config",
+			"when", "close",
+			"what", err,
+		)
+	}
+}
+
 func (watcher *configurationWatcher) processEvents(events []*clientv3.Event) {
 	for _, ev := range events {
 		if ev.Type == clientv3.EventTypePut {
