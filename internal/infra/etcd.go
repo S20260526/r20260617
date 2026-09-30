@@ -153,6 +153,7 @@ func (watcher *configurationWatcher) processEvents(events []*clientv3.Event) {
 					"infra",
 					"where", "config",
 					"when", string(ev.Kv.Key),
+					"what", err,
 				)
 			}
 		}
