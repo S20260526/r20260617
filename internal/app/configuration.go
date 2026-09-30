@@ -19,6 +19,21 @@ func (h HostColonPort) String() string {
 
 var schemeRe = regexp.MustCompile(`^[[:lower:]]+://$`)
 
+func (h HostColonPort) Url(scheme string) string {
+	if !schemeRe.MatchString(scheme) {
+		slog.Warn(
+			"app",
+			"where", "config",
+			"when", "HostPortUrl",
+			"what", "invalid scheme",
+		)
+
+		return ""
+	}
+
+	return fmt.Sprintf("%s%s:%d", scheme, h.Host, h.Port)
+}
+
 func HostPortUrls(in []HostColonPort, scheme string) []string {
 	var out []string
 
