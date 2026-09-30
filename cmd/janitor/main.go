@@ -11,7 +11,7 @@ import (
 func newJanitor(ctx context.Context, cfg app.Configuration) {
 	j := app.Janitor{
 		Puller: msgqueue.NewPuller(
-			app.HostPortStrings(cfg.Pulling.Host),
+			app.HostPortUrls(cfg.Pulling.Host, "amqp://"),
 			infra.NewRMQConsuming(cfg.Pulling.DLQ),
 		),
 		Storage: infra.NewSeaWeedFS(cfg.Storage.String()),

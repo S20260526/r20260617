@@ -64,7 +64,7 @@ func newWorker(ctx context.Context, cfg app.Configuration) error {
 
 	w := app.Worker{
 		Puller: msgqueue.NewPuller(
-			app.HostPortStrings(cfg.Pulling.Host),
+			app.HostPortUrls(cfg.Pulling.Host, "amqp://"),
 			infra.NewRMQConsuming(cfg.Pulling.Queue),
 		),
 		Storage:     infra.NewSeaWeedFS(cfg.Storage.String()),

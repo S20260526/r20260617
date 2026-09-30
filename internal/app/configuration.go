@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"regexp"
 	"slices"
 )
 
@@ -15,11 +17,24 @@ func (h HostColonPort) String() string {
 	return fmt.Sprintf("%s:%d", h.Host, h.Port)
 }
 
-func HostPortStrings(in []HostColonPort) []string {
+var schemeRe = regexp.MustCompile(`^[[:lower:]]+://$`)
+
+func HostPortUrls(in []HostColonPort, scheme string) []string {
 	var out []string
 
+	if !schemeRe.MatchString(scheme) {
+		slog.Warn(
+			"app",
+			"where", "config",
+			"when", "HostPortUrl",
+			"what", "invalid scheme",
+		)
+
+		return out
+	}
+
 	for _, it := range in {
-		out = append(out, it.String())
+		out = append(out, scheme+it.String())
 	}
 
 	return out
