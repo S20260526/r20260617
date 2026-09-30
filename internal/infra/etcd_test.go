@@ -126,11 +126,11 @@ func TestHostColonPortArrayFromString(t *testing.T) {
 		{in: "host:80,1bad.xxx:80", err: true},
 		{in: "", err: false, out: []app.HostColonPort{}},
 		{
-			in: "host:80", err: false,
+			in:  "host:80",
 			out: []app.HostColonPort{{Host: "host", Port: 80}},
 		},
 		{
-			in: "host:80,ho_st-1.2:8080,ho-st-3.4:443", err: false,
+			in: "host:80,ho_st-1.2:8080,ho-st-3.4:443",
 			out: []app.HostColonPort{
 				{Host: "host", Port: 80},
 				{Host: "ho_st-1.2", Port: 8080},

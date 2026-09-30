@@ -83,8 +83,8 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 		"pulling.host":       hostColonPortArrayCI{&c.Pulling.Host},
 		"pulling.queue":      stringCI{&c.Pulling.Queue},
 		"pulling.dlq":        stringCI{&c.Pulling.DLQ},
-		"script.file":         stringCI{&c.ScriptFile},
 		"pulling.retry.t":    durationCI{&c.Pulling.RetryTO},
+		"script.file":        stringCI{&c.ScriptFile},
 		"registrator.driver": stringCI{&c.Registrator.Driver},
 		"registrator.dsn":    stringCI{&c.Registrator.Dsn},
 	}
@@ -132,7 +132,7 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 	return watcher.config.Clone(), ochan, nil
 }
 
-func (etcd *Etcd) Close () {
+func (etcd *Etcd) Close() {
 	err := etcd.client.Close()
 
 	if err != nil {
