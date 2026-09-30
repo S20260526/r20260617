@@ -4,7 +4,44 @@ import (
 	"internal/app"
 	"slices"
 	"testing"
+	"time"
 )
+
+func TestDurationFromString(t *testing.T) {
+	data := []struct {
+		in  string
+		err bool
+		dur time.Duration
+	}{
+		{in: "", err: true}, {in: "0x1s", err: true},
+		{in: "ABC", err: true},
+
+		{in: "0s", dur: time.Second * 0},
+		{in: "3s", dur: time.Second * 3},
+		{in: "1500ms", dur: time.Millisecond * 1500},
+	}
+
+	for _, tt := range data {
+		t.Run(
+			tt.in, func(t *testing.T) {
+				dst := time.Nanosecond
+
+				err := durationCI{&dst}.fromString(tt.in)
+
+				switch err {
+				case nil:
+					if tt.err || tt.dur != dst {
+						t.Fatal()
+					}
+				default:
+					if !tt.err || dst != time.Nanosecond {
+						t.Fatal()
+					}
+				}
+			},
+		)
+	}
+}
 
 func TestPortFromString(t *testing.T) {
 	data := []struct {

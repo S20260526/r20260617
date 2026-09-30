@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"regexp"
 	"slices"
+	"time"
 )
 
 type HostColonPort struct {
@@ -62,6 +63,7 @@ type PushingConfiguration struct {
 
 type PullingConfiguration struct {
 	Host       []HostColonPort
+	RetryTO    time.Duration
 	Queue, DLQ string
 }
 

@@ -7,6 +7,7 @@ import (
 	"internal/infra"
 	"log/slog"
 	"sync"
+	"time"
 )
 
 var barrier sync.WaitGroup
@@ -34,6 +35,8 @@ func newJanitor(ctx context.Context, cfg app.Configuration) {
 					"when", "Pull",
 					"what", err,
 				)
+
+				time.Sleep(cfg.Pulling.RetryTO)
 			}
 		}
 

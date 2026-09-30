@@ -29,8 +29,9 @@ var defaultConfig = app.Configuration{
 				Host: "localhost", Port: 5672,
 			},
 		},
-		Queue: "working",
-		DLQ:   "dlq",
+		RetryTO: time.Second,
+		Queue:   "working",
+		DLQ:     "dlq",
 	},
 	ScriptFile: "/dev/null/main.py",
 	Registrator: app.RegistratorConfiguration{
@@ -83,6 +84,7 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 		"pulling.queue":      stringCI{&c.Pulling.Queue},
 		"pulling.dlq":        stringCI{&c.Pulling.DLQ},
 		"script.file":         stringCI{&c.ScriptFile},
+		"pulling.retry.t":    durationCI{&c.Pulling.RetryTO},
 		"registrator.driver": stringCI{&c.Registrator.Driver},
 		"registrator.dsn":    stringCI{&c.Registrator.Dsn},
 	}
@@ -182,6 +184,22 @@ type stringCI struct {
 
 func (ci stringCI) fromString(src string) error {
 	*ci.dst = src
+
+	return nil
+}
+
+type durationCI struct {
+	dst *time.Duration
+}
+
+func (ci durationCI) fromString(src string) error {
+	dur, err := time.ParseDuration(src)
+
+	if err != nil {
+		return err
+	}
+
+	*ci.dst = dur
 
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"sync"
+	"time"
 )
 
 var barrier sync.WaitGroup
@@ -90,6 +91,8 @@ func newWorker(ctx context.Context, cfg app.Configuration) error {
 					"when", "Pull",
 					"what", err,
 				)
+
+				time.Sleep(cfg.Pulling.RetryTO)
 			}
 		}
 
