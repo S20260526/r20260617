@@ -38,6 +38,7 @@ var defaultConfig = app.Configuration{
 		Driver: "postgres",
 		Dsn: "host=localhost dbname=testdb " +
 			"sslmode=disable user=postgres password=1234",
+		Table: "events",
 	},
 }
 
@@ -87,6 +88,7 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 		"script.file":        stringCI{&c.ScriptFile},
 		"registrator.driver": stringCI{&c.Registrator.Driver},
 		"registrator.dsn":    stringCI{&c.Registrator.Dsn},
+		"registrator.table":  stringCI{&c.Registrator.Table},
 	}
 
 	getCtx, getCtxCancel := context.WithTimeout(ctx, time.Second*5)

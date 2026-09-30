@@ -70,6 +70,7 @@ type PullingConfiguration struct {
 type RegistratorConfiguration struct {
 	Driver string
 	Dsn    string
+	Table  string
 }
 
 type Configuration struct {

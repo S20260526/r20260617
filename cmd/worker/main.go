@@ -73,7 +73,7 @@ func newWorker(ctx context.Context, cfg app.Configuration) error {
 		),
 		Storage:     infra.NewSeaWeedFS(cfg.Storage.String()),
 		Coprocess:   coprocess,
-		EventsTable: "event",
+		EventsTable: cfg.Registrator.Table,
 		Registrator: registrator,
 		Metrics:     infra.NewPrometrics(),
 	}

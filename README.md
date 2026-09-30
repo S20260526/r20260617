@@ -63,6 +63,7 @@
 | `root.script.file` | `/dev/null/main.py` | Путь к Python-скрипту сопроцесса |
 | `root.registrator.driver` | `postgres` | Имя драйвера базы данных |
 | `root.registrator.dsn` | `postgres://...` | DSN драйвера базы данных |
+| `root.registrator.table` | `events` | Имя таблицы базы данных, должно удовлетворять правилам ANSI SQL |
 
 ## Структура
 
