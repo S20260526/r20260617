@@ -97,8 +97,9 @@
 go test ./internal/app ./internal/app/msgqueue ./internal/infra
 ```
 
+Для сборки помимо Go необходим также пакет Python3 grpc\_tools (в Debian ставится из стандартного репозитория пакетами python3-grpcio, python3-grpc-tools)
+
 ```bash
-Для сборки помимо Go необходим также пакет Python3 grpc_tools (в Debian ставится из стандартного репозитория пакетами python3-grpcio, python3-grpc-tools)
 
 # Сгенерировать код для gRPC-взаимодействия
 make -C internal/grpcipc
