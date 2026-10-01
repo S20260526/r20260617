@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"net/http"
 	"time"
 )
 
@@ -9,6 +10,7 @@ type FrontMetrics interface {
 	RegIn()
 	RegOut()
 	RegErr()
+	GetHttpHandler() http.Handler
 }
 
 type Pusher interface {

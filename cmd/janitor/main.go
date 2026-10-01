@@ -12,9 +12,7 @@ import (
 
 var barrier sync.WaitGroup
 
-func newJanitor(ctx context.Context, cfg app.Configuration) {
-	barrier.Add(1)
-
+func newJanitor(ctx context.Context, cfg app.Configuration) *app.Janitor {
 	j := app.Janitor{
 		Puller: msgqueue.NewPuller(
 			app.HostPortUrls(cfg.Pulling.Host, "amqp://"),
@@ -24,7 +22,11 @@ func newJanitor(ctx context.Context, cfg app.Configuration) {
 		Metrics: infra.NewPrometrics(),
 	}
 
+	barrier.Add(1)
+
 	go func() {
+		defer barrier.Done()
+
 		for ctx.Err() == nil {
 			err := j.Pull(ctx)
 
@@ -48,33 +50,35 @@ func newJanitor(ctx context.Context, cfg app.Configuration) {
 			"when", "Cleanup",
 			"what", "completed",
 		)
-
-		barrier.Done()
 	}()
+
+	return &j
 }
 
 func main() {
 	var ctx, cancel = context.WithCancel(context.Background())
 
-	m := infra.MainObj{
-		Tag: "janitor",
-		Setup: func(cfg app.Configuration) error {
-			newJanitor(ctx, cfg)
+	mainObj := infra.MainObj{Tag: "janitor"}
+	mainObj.Setup = func(cfg app.Configuration) error {
+		jntr := newJanitor(ctx, cfg)
 
-			return nil
-		},
-		Reinit: func(cfg app.Configuration) error {
-			cancel()
+		mainObj.ExportMetrics(jntr.Metrics)
 
-			ctx, cancel = context.WithCancel(context.Background())
+		return nil
+	}
+	mainObj.Reinit = func(cfg app.Configuration) error {
+		cancel()
 
-			newJanitor(ctx, cfg)
+		ctx, cancel = context.WithCancel(context.Background())
 
-			return nil
-		},
+		jntr := newJanitor(ctx, cfg)
+
+		mainObj.ExportMetrics(jntr.Metrics)
+
+		return nil
 	}
 
-	m.MainFunc()
+	mainObj.MainFunc()
 
 	cancel()
 

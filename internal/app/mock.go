@@ -5,6 +5,7 @@ import (
 	"errors"
 	"internal/app/msgqueue"
 	"internal/grpcipc"
+	"net/http"
 	"time"
 )
 
@@ -196,4 +197,8 @@ func (m *mockMetrics) RegErr() {
 
 func (m *mockMetrics) RegFrontToEndDuration(beginTime time.Time) {
 	m.beginTime = beginTime
+}
+
+func (m *mockMetrics) GetHttpHandler() http.Handler {
+	return nil
 }

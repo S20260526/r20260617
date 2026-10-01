@@ -3,8 +3,10 @@ package infra
 import (
 	"context"
 	"errors"
+	"fmt"
 	"internal/app"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,6 +20,9 @@ type MainObj struct {
 	etcd    *Etcd
 	sigChan <-chan os.Signal
 	cfgChan <-chan app.Configuration
+	cfg     app.Configuration
+
+	metricsSrv *http.Server
 }
 
 func (m *MainObj) newEtcd() (*Etcd, error) {
@@ -53,6 +58,35 @@ func (m *MainObj) MainFunc() {
 	}
 }
 
+func (m *MainObj) ExportMetrics(metrics app.ExportableMetrics) {
+	if m.metricsSrv != nil {
+		slog.Warn(
+			m.Tag,
+			"where", "metrics",
+			"when", "export",
+			"what", "server already running",
+		)
+	}
+
+	m.metricsSrv = &http.Server{
+		Addr:    fmt.Sprintf(":%d", m.cfg.MetricsPort),
+		Handler: metrics.GetHttpHandler(),
+	}
+
+	go func() {
+		err := m.metricsSrv.ListenAndServe()
+
+		if err != nil {
+			slog.Info(
+				m.Tag,
+				"where", "metrics",
+				"when", "export",
+				"what", err,
+			)
+		}
+	}()
+}
+
 func (m *MainObj) mainFunc() error {
 	var err error
 
@@ -74,9 +108,7 @@ func (m *MainObj) mainFunc() error {
 
 	defer etcdCancel()
 
-	var cfg app.Configuration
-
-	cfg, m.cfgChan, err = m.etcd.Watch(etcdCtx)
+	m.cfg, m.cfgChan, err = m.etcd.Watch(etcdCtx)
 
 	if err != nil {
 		return err
@@ -84,8 +116,14 @@ func (m *MainObj) mainFunc() error {
 
 	slog.Info(m.Tag, "where", "mainonbj", "when", "loop", "what", "starting")
 
+	defer func() {
+		if m.metricsSrv != nil {
+			m.metricsSrv.Shutdown(context.Background())
+		}
+	}()
+
 	if m.Setup != nil {
-		err = m.Setup(cfg)
+		err = m.Setup(m.cfg)
 	}
 
 	for err == nil {
@@ -104,6 +142,13 @@ func (m *MainObj) selectCfgSig() error {
 	case cfg, ok := <-m.cfgChan:
 		if !ok {
 			return errors.New("configuration watcher channel broken")
+		}
+
+		m.cfg = cfg
+
+		if m.metricsSrv != nil {
+			m.metricsSrv.Shutdown(context.Background())
+			m.metricsSrv = nil
 		}
 
 		if m.Reinit != nil {

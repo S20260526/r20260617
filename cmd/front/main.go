@@ -109,35 +109,36 @@ func main() {
 	var s *http.Server
 	var oldCfg app.Configuration
 
-	m := infra.MainObj{
-		Tag: "front",
-		Setup: func(cfg app.Configuration) error {
-			h = &handler{front: newFront(cfg)}
-			s = newServer(cfg, h)
-			oldCfg = cfg
+	mainObj := infra.MainObj{Tag: "front"}
+	mainObj.Setup = func(cfg app.Configuration) error {
+		h = &handler{front: newFront(cfg)}
+		s = newServer(cfg, h)
+		oldCfg = cfg
 
-			return nil
-		},
-		Reinit: func(newCfg app.Configuration) error {
+		mainObj.ExportMetrics(h.front.Metrics)
 
-			func() {
-				h.mutex.Lock()
+		return nil
+	}
+	mainObj.Reinit = func(newCfg app.Configuration) error {
+		func() {
+			h.mutex.Lock()
 
-				defer h.mutex.Unlock()
+			defer h.mutex.Unlock()
 
-				oldCfg = newCfg
-				h.front = newFront(newCfg)
-			}()
+			oldCfg = newCfg
+			h.front = newFront(newCfg)
+		}()
 
-			if newCfg.InputPort != oldCfg.InputPort {
-				s.Shutdown(context.Background())
+		if newCfg.InputPort != oldCfg.InputPort {
+			s.Shutdown(context.Background())
 
-				s = newServer(newCfg, h)
-			}
+			s = newServer(newCfg, h)
+		}
 
-			return nil
-		},
+		mainObj.ExportMetrics(h.front.Metrics)
+
+		return nil
 	}
 
-	m.MainFunc()
+	mainObj.MainFunc()
 }

@@ -6,6 +6,8 @@ import (
 )
 
 type JanitorMetrics interface {
+	ExportableMetrics
+
 	RegIn()
 	RegErr()
 }

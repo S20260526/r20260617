@@ -40,6 +40,7 @@ var defaultConfig = app.Configuration{
 			"sslmode=disable user=postgres password=1234",
 		Table: "events",
 	},
+	MetricsPort: 8099,
 }
 
 const configKeyPrefix = "root."
@@ -89,6 +90,7 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 		"registrator.driver": stringCI{&c.Registrator.Driver},
 		"registrator.dsn":    stringCI{&c.Registrator.Dsn},
 		"registrator.table":  stringCI{&c.Registrator.Table},
+		"metrics.port":       portCI{&c.MetricsPort},
 	}
 
 	getCtx, getCtxCancel := context.WithTimeout(ctx, time.Second*5)

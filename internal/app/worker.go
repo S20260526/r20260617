@@ -7,6 +7,8 @@ import (
 )
 
 type WorkerMetrics interface {
+	ExportableMetrics
+
 	RegIn()
 	RegYes()
 	RegNo()

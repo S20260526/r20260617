@@ -80,6 +80,7 @@ type Configuration struct {
 	Pulling     PullingConfiguration
 	ScriptFile  string
 	Registrator RegistratorConfiguration
+	MetricsPort int
 }
 
 func (c *Configuration) Clone() Configuration {

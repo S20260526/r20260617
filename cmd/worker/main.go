@@ -18,7 +18,7 @@ type ipc struct {
 	ipc      *infra.GrpcIpcClient
 }
 
-func newipc() (*ipc, error) {
+func newIpc() (*ipc, error) {
 	f, err := os.CreateTemp(os.TempDir(), "grpcipc.*")
 
 	if err != nil {
@@ -44,26 +44,26 @@ func (i *ipc) Call(ctx context.Context, rqst *app.CoprocessRequest) (*app.Coproc
 	return rsps, nil
 }
 
-func newWorker(ctx context.Context, cfg app.Configuration) error {
+func newWorker(ctx context.Context, cfg app.Configuration) (*app.Worker, error) {
 	registrator, err := infra.NewRDBMS(
 		ctx,
 		cfg.Registrator.Driver, cfg.Registrator.Dsn,
 	)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	ipc, err := newipc()
+	ipc, err := newIpc()
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	coprocess, err := infra.NewPython3(ctx, cfg.ScriptFile, ipc)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	w := app.Worker{
@@ -81,6 +81,8 @@ func newWorker(ctx context.Context, cfg app.Configuration) error {
 	barrier.Add(1)
 
 	go func() {
+		defer barrier.Done()
+
 		for ctx.Err() == nil {
 			err := w.Pull(ctx)
 
@@ -106,31 +108,42 @@ func newWorker(ctx context.Context, cfg app.Configuration) error {
 			"when", "Cleanup",
 			"what", "completed",
 		)
-
-		barrier.Done()
 	}()
 
-	return nil
+	return &w, nil
 }
 
 func main() {
 	var ctx, cancel = context.WithCancel(context.Background())
 
-	m := infra.MainObj{
-		Tag: "worker",
-		Setup: func(cfg app.Configuration) error {
-			return newWorker(ctx, cfg)
-		},
-		Reinit: func(cfg app.Configuration) error {
-			cancel()
+	mainObj := infra.MainObj{Tag: "worker"}
+	mainObj.Setup = func(cfg app.Configuration) error {
+		wrk, err := newWorker(ctx, cfg)
 
-			ctx, cancel = context.WithCancel(context.Background())
+		if err != nil {
+			return err
+		}
 
-			return newWorker(ctx, cfg)
-		},
+		mainObj.ExportMetrics(wrk.Metrics)
+
+		return nil
+	}
+	mainObj.Reinit = func(cfg app.Configuration) error {
+		cancel()
+
+		ctx, cancel = context.WithCancel(context.Background())
+		wrk, err := newWorker(ctx, cfg)
+
+		if err != nil {
+			return err
+		}
+
+		mainObj.ExportMetrics(wrk.Metrics)
+
+		return nil
 	}
 
-	m.MainFunc()
+	mainObj.MainFunc()
 
 	cancel()
 
