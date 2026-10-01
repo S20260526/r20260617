@@ -77,6 +77,7 @@
 ├── internal/
 │   ├── app/             # Основные интерфейсы и бизнес-логика (Front, Worker, Janitor, Order, Event)
 │   │   ├── msgqueue/    # Абстракция очередей: Pusher, Puller
+│   │   ├── exportable_metrics.go
 │   │   ├── front.go
 │   │   ├── worker.go
 │   │   ├── janitor.go
