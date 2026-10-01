@@ -3,24 +3,31 @@ name: bench
 services:
   front:
     build:
-      - context: .
+      context: .
     depends_on:
       - config
     command: /front http://config:2379
 
   worker1:
     build:
-      - context: .
+      context: .
     depends_on:
       - config
     command: /worker http://config:2379
 
   worker2:
     build:
-      - context: .
+      context: .
     depends_on:
       - config
     command: /worker http://config:2379
+
+  janitor:
+    build:
+      context: .
+    depends_on:
+      - config
+    command: ./janitor http://config:2379
 
   config:
     image: gcr.io/etcd-development/etcd:v3.7.1
@@ -35,7 +42,7 @@ services:
   rmq-entry:
     image: haproxy:3.0
     volumes:
-      - ./rmq-entry.haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./docker/rmq-entry.haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     depends_on:
       - rmq1
       - rmq2
@@ -50,8 +57,8 @@ services:
     ports:
       - "15673:15672"
     volumes:
-      - ./rmq.conf:/rmq.conf
-      - ./rmq.defs.json:/rmq.defs.json
+      - ./docker/rmq.conf:/rmq.conf
+      - ./docker/rmq.defs.json:/rmq.defs.json
 
   rmq2:
     image: rabbitmq:management
@@ -62,8 +69,8 @@ services:
     ports:
       - "15674:15672"
     volumes:
-      - ./rmq.conf:/rmq.conf
-      - ./rmq.defs.json:/rmq.defs.json
+      - ./docker/rmq.conf:/rmq.conf
+      - ./docker/rmq.defs.json:/rmq.defs.json
 
   rmq3:
     image: rabbitmq:management
@@ -74,14 +81,14 @@ services:
     ports:
       - "15675:15672"
     volumes:
-      - ./rmq.conf:/rmq.conf
-      - ./rmq.defs.json:/rmq.defs.json
+      - ./docker/rmq.conf:/rmq.conf
+      - ./docker/rmq.defs.json:/rmq.defs.json
 
   prom:
     image: prom/prometheus:v3-busybox
     container_name: prometheus
     volumes:
-      - ./prom.yaml:/etc/prometheus/prom.yml
+      - ./docker/prom.yaml:/etc/prometheus/prom.yml
       - prom-data:/prometheus
     command:
       - --config.file=/etc/prometheus/prom.yml
@@ -99,12 +106,10 @@ services:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: nimda
-    depends_on:
-      - l
     restart: unless-stopped
     volumes:
       - graf-data:/var/lib/grafana
-      - ./graf-prom.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
+      - ./docker/graf-prom.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
 
 volumes:
   prom-data:

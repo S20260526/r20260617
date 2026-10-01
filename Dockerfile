@@ -7,7 +7,7 @@ RUN pip install grpcio
 RUN apt-get update
 RUN apt-get install -y protoc-gen-go-grpc protoc-gen-go
 
-COPY ../internal/grpcipc/proto/ /b/proto/
+COPY internal/grpcipc/proto/ /b/proto/
 
 RUN mkdir golang python
 
