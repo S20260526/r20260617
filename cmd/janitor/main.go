@@ -38,7 +38,10 @@ func newJanitor(ctx context.Context, cfg app.Configuration) *app.Janitor {
 					"what", err,
 				)
 
-				time.Sleep(cfg.Pulling.RetryTO)
+				select {
+				case <-time.After(cfg.Pulling.RetryTO):
+				case <-ctx.Done():
+				}
 			}
 		}
 

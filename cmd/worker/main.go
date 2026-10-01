@@ -94,7 +94,10 @@ func newWorker(ctx context.Context, cfg app.Configuration) (*app.Worker, error) 
 					"what", err,
 				)
 
-				time.Sleep(cfg.Pulling.RetryTO)
+				select {
+				case <-time.After(cfg.Pulling.RetryTO):
+				case <-ctx.Done():
+				}
 			}
 		}
 
