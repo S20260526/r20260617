@@ -21,7 +21,7 @@ FROM golang:alpine AS b
 
 WORKDIR /b
 
-COPY .. /b/
+COPY . /b/
 COPY --from=p /b/golang/internal/grpcipc/ /b/internal/grpcipc/
 
 RUN go build ./cmd/front
