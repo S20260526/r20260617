@@ -1,0 +1,112 @@
+name: bench
+
+services:
+  front:
+    build:
+      - context: .
+    depends_on:
+      - config
+    command: /front http://config:2379
+
+  worker1:
+    build:
+      - context: .
+    depends_on:
+      - config
+    command: /worker http://config:2379
+
+  worker2:
+    build:
+      - context: .
+    depends_on:
+      - config
+    command: /worker http://config:2379
+
+  config:
+    image: gcr.io/etcd-development/etcd:v3.7.1
+    volumes:
+      - etcd-data:/etcd-data
+    command:
+      - /usr/local/bin/etcd
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://127.0.0.1:2379
+      - --data-dir=/etcd-data
+
+  rmq-entry:
+    image: haproxy:3.0
+    volumes:
+      - ./rmq-entry.haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - rmq1
+      - rmq2
+      - rmq3
+
+  rmq1:
+    image: rabbitmq:management
+    environment:
+      RABBITMQ_ERLANG_COOKIE: 99X9gv]QGdKEuT3wyw0xicPjLLYpsewK
+      RABBITMQ_NODENAME: rabbit@rmq1
+      RABBITMQ_CONFIG_FILE: /rmq.conf
+    ports:
+      - "15673:15672"
+    volumes:
+      - ./rmq.conf:/rmq.conf
+      - ./rmq.defs.json:/rmq.defs.json
+
+  rmq2:
+    image: rabbitmq:management
+    environment:
+      RABBITMQ_ERLANG_COOKIE: 99X9gv]QGdKEuT3wyw0xicPjLLYpsewK
+      RABBITMQ_NODENAME: rabbit@rmq2
+      RABBITMQ_CONFIG_FILE: /rmq.conf
+    ports:
+      - "15674:15672"
+    volumes:
+      - ./rmq.conf:/rmq.conf
+      - ./rmq.defs.json:/rmq.defs.json
+
+  rmq3:
+    image: rabbitmq:management
+    environment:
+      RABBITMQ_ERLANG_COOKIE: 99X9gv]QGdKEuT3wyw0xicPjLLYpsewK
+      RABBITMQ_NODENAME: rabbit@rmq3
+      RABBITMQ_CONFIG_FILE: /rmq.conf
+    ports:
+      - "15675:15672"
+    volumes:
+      - ./rmq.conf:/rmq.conf
+      - ./rmq.defs.json:/rmq.defs.json
+
+  prom:
+    image: prom/prometheus:v3-busybox
+    container_name: prometheus
+    volumes:
+      - ./prom.yaml:/etc/prometheus/prom.yml
+      - prom-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prom.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/etc/prometheus/console_libraries
+      - --storage.tsdb.retention.time=15d
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+
+  graf:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: nimda
+    depends_on:
+      - l
+    restart: unless-stopped
+    volumes:
+      - graf-data:/var/lib/grafana
+      - ./graf-prom.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
+
+volumes:
+  prom-data:
+  graf-data:
+  etcd-data:

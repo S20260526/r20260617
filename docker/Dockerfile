@@ -7,7 +7,7 @@ RUN pip install grpcio
 RUN apt-get update
 RUN apt-get install -y protoc-gen-go-grpc protoc-gen-go
 
-COPY internal/grpcipc/proto/ /b/proto/
+COPY ../internal/grpcipc/proto/ /b/proto/
 
 RUN mkdir golang python
 
@@ -21,13 +21,13 @@ FROM golang:alpine AS b
 
 WORKDIR /b
 
-COPY . /b/
+COPY .. /b/
 COPY --from=p /b/golang/internal/grpcipc/ /b/internal/grpcipc/
 
-RUN go build ./testbench/coprocess
+RUN go build ./cmd/front
+RUN go build ./cmd/worker
+RUN go build ./cmd/janitor
 
 FROM scratch
 
-COPY --from=b /b/coprocess /entry
-
-ENTRYPOINT ["/entry"]
+COPY --from=b /b/front /b/worker /b/janitor /
