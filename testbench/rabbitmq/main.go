@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"internal/infra"
 	"internal/app/msgqueue"
+	"internal/infra"
 	"log"
 
 	"os"
