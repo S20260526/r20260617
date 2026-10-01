@@ -66,10 +66,21 @@ func (m *MainObj) ExportMetrics(metrics app.ExportableMetrics) {
 			"when", "export",
 			"what", "server already running",
 		)
+
+		return
 	}
 
+	addr := fmt.Sprintf(":%d", m.cfg.MetricsPort)
+
+	slog.Info(
+		m.Tag,
+		"where", "metrics",
+		"when", "export",
+		"what", addr,
+	)
+
 	m.metricsSrv = &http.Server{
-		Addr:    fmt.Sprintf(":%d", m.cfg.MetricsPort),
+		Addr:    addr,
 		Handler: metrics.GetHttpHandler(),
 	}
 
