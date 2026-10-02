@@ -6,28 +6,34 @@ services:
       context: .
     depends_on:
       - config
-    command: /front http://config:2379
+    command: /opt/front http://config:2379
+    ports:
+      - "8089:8089"
 
   worker1:
     build:
       context: .
     depends_on:
       - config
-    command: /worker http://config:2379
+    volumes:
+      - ./docker/scripting-file.py:/opt/python/main.py:ro
+    command: /opt/worker http://config:2379
 
   worker2:
     build:
       context: .
     depends_on:
       - config
-    command: /worker http://config:2379
+    volumes:
+      - ./docker/scripting-file.py:/opt/python/main.py:ro
+    command: /opt/worker http://config:2379
 
   janitor:
     build:
       context: .
     depends_on:
       - config
-    command: ./janitor http://config:2379
+    command: /opt/janitor http://config:2379
 
   config:
     image: gcr.io/etcd-development/etcd:v3.7.1
@@ -38,6 +44,9 @@ services:
       - --listen-client-urls=http://0.0.0.0:2379
       - --advertise-client-urls=http://127.0.0.1:2379
       - --data-dir=/etcd-data
+
+  storage:
+    image: chrislusf/seaweedfs:latest
 
   rmq-entry:
     image: haproxy:3.0
@@ -88,8 +97,10 @@ services:
     image: postgres:latest
     environment:
       POSTGRES_PASSWORD: 1234
+      PGDATA: /var/lib/postgresql18/docker
     volumes:
       - ./docker/init-db.sql:/r20260921-init.sql
+      - registrator-data:/var/lib/postgresql18/docker
     ports:
       - "5432:5432"
 
@@ -124,3 +135,4 @@ volumes:
   prom-data:
   graf-data:
   etcd-data:
+  registrator-data:

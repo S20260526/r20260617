@@ -73,12 +73,17 @@ type RegistratorConfiguration struct {
 	Table  string
 }
 
+type Scripting struct {
+	SocketDir string
+	File      string
+}
+
 type Configuration struct {
 	InputPort   int
 	Storage     HostColonPort
 	Pushing     PushingConfiguration
 	Pulling     PullingConfiguration
-	ScriptFile  string
+	Scripting   Scripting
 	Registrator RegistratorConfiguration
 	MetricsPort int
 }

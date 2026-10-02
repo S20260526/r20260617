@@ -33,7 +33,10 @@ var defaultConfig = app.Configuration{
 		Queue:   "working",
 		DLQ:     "dlq",
 	},
-	ScriptFile: "/dev/null/main.py",
+	Scripting: app.Scripting{
+		SocketDir: "/tmp",
+		File:      "/dev/null/main.py",
+	},
 	Registrator: app.RegistratorConfiguration{
 		Driver: "postgres",
 		Dsn: "host=localhost dbname=testdb " +
@@ -86,7 +89,8 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 		"pulling.queue":      stringCI{&c.Pulling.Queue},
 		"pulling.dlq":        stringCI{&c.Pulling.DLQ},
 		"pulling.retry.t":    durationCI{&c.Pulling.RetryTO},
-		"script.file":        stringCI{&c.ScriptFile},
+		"script.socket.d":    stringCI{&c.Scripting.SocketDir},
+		"script.file":        stringCI{&c.Scripting.File},
 		"registrator.driver": stringCI{&c.Registrator.Driver},
 		"registrator.dsn":    stringCI{&c.Registrator.Dsn},
 		"registrator.table":  stringCI{&c.Registrator.Table},

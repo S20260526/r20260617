@@ -18,8 +18,8 @@ type ipc struct {
 	ipc      *infra.GrpcIpcClient
 }
 
-func newIpc() (*ipc, error) {
-	f, err := os.CreateTemp(os.TempDir(), "grpcipc.*")
+func newIpc(cfg app.Configuration) (*ipc, error) {
+	f, err := os.CreateTemp(cfg.Scripting.SocketDir, "grpcipc.*")
 
 	if err != nil {
 		return nil, err
@@ -54,13 +54,13 @@ func newWorker(ctx context.Context, cfg app.Configuration) (*app.Worker, error) 
 		return nil, err
 	}
 
-	ipc, err := newIpc()
+	ipc, err := newIpc(cfg)
 
 	if err != nil {
 		return nil, err
 	}
 
-	coprocess, err := infra.NewPython3(ctx, cfg.ScriptFile, ipc)
+	coprocess, err := infra.NewPython3(ctx, cfg.Scripting.File, ipc)
 
 	if err != nil {
 		return nil, err

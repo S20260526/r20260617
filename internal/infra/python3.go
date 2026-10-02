@@ -17,7 +17,7 @@ func NewPython3(ctx context.Context, path string, ipc app.Ipc) (app.Coprocess, e
 	_, err := os.Stat(path)
 
 	if err != nil {
-		return nil, fmt.Errorf("file %s not found", path)
+		return nil, fmt.Errorf("script file %s not found", path)
 	}
 
 	return newCoprocess(ctx, ipc, "python3", path)

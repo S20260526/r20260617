@@ -19,10 +19,34 @@
       "tags":["administrator"]
     }
   ],
+  "exchanges": [
+    {
+      "auto_delete":false,"durable":true,"name":"dlx","type":"direct",
+      "vhost": "/"
+    }
+  ],
   "queues":[
     {
       "arguments": {"x-queue-type":"quorum"},
+      "auto_delete":false,"durable":true,"name":"dlq","type":"quorum",
+      "vhost":"/"
+    },
+    {
+      "arguments": {
+              "x-queue-type":"quorum",
+              "x-message-ttl":10000,
+              "x-max-length-bytes":10,
+              "x-dead-letter-exchange":"dlx",
+              "x-dead-letter-routing-key": "dlq"
+      },
       "auto_delete":false,"durable":true,"name":"working","type":"quorum",
+      "vhost":"/"
+    }
+  ],
+  "bindings":[
+    {
+      "source":"dlx","destination":"dlq","destination_type":"queue",
+      "routing_key":"dlq",
       "vhost":"/"
     }
   ]
