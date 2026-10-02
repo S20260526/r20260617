@@ -1,6 +1,6 @@
 #!/bin/sh
 
-docker compose exec registrator psql -f /r20260921-init.sql
+docker compose exec registrator psql --user=postgres --file=/r20260921-init.sql
 
 docker compose exec -T config etcdctl txn <<EOD
 
