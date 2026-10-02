@@ -15,12 +15,16 @@ if os.path.exists(socketname):
 
 class Servicer(ipc2.IpcServicer):
     def Process(self, request, context):
-        return ipc1.Response(
-            result=
-                ipc1.RESULT_FAIL
-                    if len(request.payload) == 0
-                    else ipc1.RESULT_NO
-        )
+        return ipc1.Response(result=self.Result(request.payload))
+
+    def Result(self, payload):
+        match payload:
+            case b'no':
+                return ipc1.RESULT_NO
+            case b'yes':
+                return ipc1.RESULT_YES
+            case _:
+                return ipc1.RESULT_FAIL
 
 server = grpc.server(futures.ThreadPoolExecutor())
 
