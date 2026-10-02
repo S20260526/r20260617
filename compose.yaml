@@ -84,6 +84,15 @@ services:
       - ./docker/rmq.conf:/rmq.conf
       - ./docker/rmq.defs.json:/rmq.defs.json
 
+  registrator:
+    image: postgres:latest
+    environment:
+      POSTGRES_PASSWORD: 1234
+    volumes:
+      - ./docker/init-db.sql:/r20260921-init.sql
+    ports:
+      - "5432:5432"
+
   prom:
     image: prom/prometheus:v3-busybox
     container_name: prometheus

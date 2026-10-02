@@ -1,5 +1,7 @@
 #!/bin/sh
 
+docker compose exec registrator psql -f /r20260921-init.sql
+
 docker compose exec -T config etcdctl txn <<EOD
 
 put root.input.port 8089
@@ -12,7 +14,7 @@ put root.pulling.dlq dlq
 put root.pulling.retry.t 10s
 put root.script.file /python/main.py
 put root.registrator.driver postgres
-put root.registrator.dsn "host=localhost dbname=testdb sslmode=disable user=postgres password=1234"
+put root.registrator.dsn "host=registrator sslmode=disable user=postgres password=1234"
 put root.registrator.table events
 put root.metrics.port 8099
 
