@@ -55,7 +55,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cp, err := infra.NewPython3(ctx, "testbench/grpcipc/main.py", newipc())
+	cp, err := infra.NewPython3(ctx, "testbench/coprocess/main.py", newipc())
 
 	if err != nil {
 		log.Fatal("FATAL:", err)
