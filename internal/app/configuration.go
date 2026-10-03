@@ -75,7 +75,7 @@ type RegistratorConfiguration struct {
 	Table  string
 }
 
-type Scripting struct {
+type ScriptingConfiguration struct {
 	SocketDir string
 	File      string
 }
@@ -85,7 +85,7 @@ type Configuration struct {
 	Storage     HostColonPort
 	Pushing     PushingConfiguration
 	Pulling     PullingConfiguration
-	Scripting   Scripting
+	Scripting   ScriptingConfiguration
 	Registrator RegistratorConfiguration
 	MetricsPort int
 }

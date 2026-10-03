@@ -34,7 +34,7 @@ var defaultConfig = app.Configuration{
 		Queue:   "working",
 		DLQ:     "dlq",
 	},
-	Scripting: app.Scripting{
+	Scripting: app.ScriptingConfiguration{
 		SocketDir: "/tmp",
 		File:      "/dev/null/main.py",
 	},
