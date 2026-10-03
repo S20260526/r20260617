@@ -1,9 +1,11 @@
 package infra
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"internal/app"
+	"log/slog"
 	"os"
 	"os/exec"
 )
@@ -28,11 +30,35 @@ func newCoprocess(ctx context.Context, ipc app.Ipc, name string, args ...string)
 
 	cmd := exec.CommandContext(ctx, name, allargs...)
 
-	err := cmd.Start()
+	stderr, err := cmd.StderrPipe()
 
 	if err != nil {
 		return nil, err
 	}
+
+	err = cmd.Start()
+
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		scnr := bufio.NewScanner(stderr)
+
+		for scnr.Scan() {
+
+			s := scnr.Text()
+
+			if len(s) > 0 {
+				slog.Warn(
+					"coprocess",
+					"where", name,
+					"when", "scan stderr",
+					"what", s,
+				)
+			}
+		}
+	}()
 
 	return &coprocess{ipc, cmd}, nil
 }

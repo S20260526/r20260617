@@ -18,6 +18,9 @@ class Servicer(ipc2.IpcServicer):
         return ipc1.Response(result=self.Result(request.payload))
 
     def Result(self, payload):
+        print(f'input data: "{payload}"', file=sys.stderr)
+        sys.stderr.flush()
+
         match payload:
             case b'no':
                 return ipc1.RESULT_NO
