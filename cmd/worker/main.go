@@ -123,11 +123,16 @@ func main() {
 	mainObj.Setup = func(cfg app.Configuration) error {
 		wrk, err := newWorker(ctx, cfg)
 
-		if err != nil {
-			return err
+		if err == nil {
+			mainObj.ExportMetrics(wrk.Metrics)
+		} else {
+			slog.Warn(
+				"worker",
+				"where", "Setup",
+				"when", "Setup",
+				"what", err,
+			)
 		}
-
-		mainObj.ExportMetrics(wrk.Metrics)
 
 		return nil
 	}
@@ -137,11 +142,16 @@ func main() {
 		ctx, cancel = context.WithCancel(context.Background())
 		wrk, err := newWorker(ctx, cfg)
 
-		if err != nil {
-			return err
+		if err == nil {
+			mainObj.ExportMetrics(wrk.Metrics)
+		} else {
+			slog.Warn(
+				"worker",
+				"where", "Setup",
+				"when", "Setup",
+				"what", err,
+			)
 		}
-
-		mainObj.ExportMetrics(wrk.Metrics)
 
 		return nil
 	}
