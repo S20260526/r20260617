@@ -8,7 +8,7 @@ put root.input.port 8089
 put root.storage storage:9333
 put root.pushing.host rmq-entry:5672
 put root.pushing.queue working
-put root.pushing.heartbeat 30s
+put root.pushing.heartbeat 3s
 put root.pulling.host rmq1:5672,rmq2:5672,rmq3:5672
 put root.pulling.queue working
 put root.pulling.dlq dlq
