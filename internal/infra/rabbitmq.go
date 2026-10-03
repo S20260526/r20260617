@@ -29,7 +29,7 @@ func (r RMQIncoming) Acknowledge() {
 }
 
 func (r RMQIncoming) Reject() {
-	if err := r.dlvr.Nack(false, true); err != nil {
+	if err := r.dlvr.Reject(true); err != nil {
 		slog.Warn(
 			"infra",
 			"where", "RabbitMQ",
