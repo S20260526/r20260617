@@ -59,6 +59,8 @@ func HostPortUrls(in []HostColonPort, scheme string) []string {
 type PushingConfiguration struct {
 	Host  HostColonPort
 	Queue string
+
+	Heartbeat time.Duration
 }
 
 type PullingConfiguration struct {

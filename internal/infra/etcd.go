@@ -21,7 +21,8 @@ var defaultConfig = app.Configuration{
 		Host: app.HostColonPort{
 			Host: "localhost", Port: 5672,
 		},
-		Queue: "working",
+		Queue:     "working",
+		Heartbeat: time.Second * 30,
 	},
 	Pulling: app.PullingConfiguration{
 		Host: []app.HostColonPort{
@@ -85,6 +86,7 @@ func (etcd *Etcd) Watch(ctx context.Context) (app.Configuration, <-chan app.Conf
 		"storage":            hostColonPortCI{&c.Storage},
 		"pushing.host":       hostColonPortCI{&c.Pushing.Host},
 		"pushing.queue":      stringCI{&c.Pushing.Queue},
+		"pushing.heartbeat":  durationCI{&c.Pushing.Heartbeat},
 		"pulling.host":       hostColonPortArrayCI{&c.Pulling.Host},
 		"pulling.queue":      stringCI{&c.Pulling.Queue},
 		"pulling.dlq":        stringCI{&c.Pulling.DLQ},

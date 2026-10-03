@@ -75,7 +75,9 @@ func newFront(cfg app.Configuration) *app.Front {
 			// TODO what about cleanup?
 			Pusher: msgqueue.NewPusher(
 				cfg.Pushing.Host.Url("amqp://"),
-				infra.NewRMQPublishing(cfg.Pushing.Queue),
+				infra.NewRMQPublishing(
+					cfg.Pushing.Queue, cfg.Pushing.Heartbeat,
+				),
 			),
 		},
 		Storage: infra.NewSeaWeedFS(cfg.Storage.String()),

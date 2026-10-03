@@ -6,6 +6,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"internal/app/msgqueue"
 	"log/slog"
+	"time"
 )
 
 type RMQIncoming struct {
@@ -40,6 +41,9 @@ func (r RMQIncoming) Reject() {
 
 type RMQQueue struct {
 	name string
+
+	heartbeat time.Duration
+
 	conn *amqp.Connection
 	chnl *amqp.Channel
 }
@@ -54,7 +58,12 @@ type RMQConsuming struct {
 }
 
 func (q *RMQQueue) Connect(url string) error {
-	conn, err := amqp.Dial(url)
+	conn, err := amqp.DialConfig(
+		url,
+		amqp.Config{
+			Heartbeat: q.heartbeat,
+		},
+	)
 
 	q.conn = conn
 
@@ -65,8 +74,8 @@ func (q *RMQQueue) CloseChannel() {
 	q.chnl.Close()
 }
 
-func NewRMQPublishing(name string) *RMQPublishing {
-	return &RMQPublishing{RMQQueue{name: name}}
+func NewRMQPublishing(name string, heartbeat time.Duration) *RMQPublishing {
+	return &RMQPublishing{RMQQueue{name: name, heartbeat: heartbeat}}
 }
 
 func NewRMQConsuming(name string) *RMQConsuming {
