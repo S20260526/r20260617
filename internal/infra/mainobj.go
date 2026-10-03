@@ -163,7 +163,7 @@ func (m *MainObj) selectCfgSig() error {
 		}
 
 		if m.Reinit != nil {
-			m.Reinit(cfg)
+			return m.Reinit(cfg)
 		}
 	}
 
