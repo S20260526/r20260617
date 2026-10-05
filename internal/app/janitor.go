@@ -19,19 +19,19 @@ type Janitor struct {
 }
 
 func (j *Janitor) Pull(ctx context.Context) error {
-	j.Metrics.RegIn()
-
 	in, err := j.Puller.Pull(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	j.Metrics.RegIn()
 
 	defer func() {
 		if err != nil {
 			j.Metrics.RegErr()
 		}
 	}()
-
-	if err != nil {
-		return err
-	}
 
 	defer in.Acknowledge()
 

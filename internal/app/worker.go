@@ -32,9 +32,11 @@ type Worker struct {
 }
 
 func (w *Worker) Pull(ctx context.Context) error {
-	w.Metrics.RegIn()
-
 	in, err := w.Puller.Pull(ctx)
+
+	if err != nil {
+		return err
+	}
 
 	defer func() {
 		if err != nil {
@@ -42,9 +44,7 @@ func (w *Worker) Pull(ctx context.Context) error {
 		}
 	}()
 
-	if err != nil {
-		return err
-	}
+	w.Metrics.RegIn()
 
 	doReject := true
 
