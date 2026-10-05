@@ -47,7 +47,7 @@
         "kind": "Panel",
         "spec": {
           "id": 1,
-          "title": "In",
+          "title": "Err",
           "description": "",
           "links": [],
           "data": {
