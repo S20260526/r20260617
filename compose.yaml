@@ -130,6 +130,8 @@ services:
     volumes:
       - graf-data:/var/lib/grafana
       - ./docker/graf-prom.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
+      - ./docker/graf-dashboard.yaml:/etc/grafana/provisioning/dashboards/graf-dashboard.yaml
+      - ./docker/graf-dashboard.json:/var/lib/grafana/dashboards/auto/r20260921.json:ro
 
 volumes:
   prom-data:
