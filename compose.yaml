@@ -16,7 +16,7 @@ services:
     depends_on:
       - config
     volumes:
-      - ./docker/scripting-file.py:/opt/python/main.py:ro
+      - ./docker/scripting-file-2.py:/opt/python/main.py:ro
     command: /opt/worker http://config:2379
 
   worker2:
@@ -25,7 +25,7 @@ services:
     depends_on:
       - config
     volumes:
-      - ./docker/scripting-file.py:/opt/python/main.py:ro
+      - ./docker/scripting-file-2.py:/opt/python/main.py:ro
     command: /opt/worker http://config:2379
 
   janitor:

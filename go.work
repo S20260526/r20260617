@@ -6,6 +6,7 @@ use (
 	./cmd/front
 	./cmd/janitor
 	./cmd/worker
+	./cmd/prober
 
 	./internal/app
 	./internal/app/msgqueue
