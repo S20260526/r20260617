@@ -34,8 +34,8 @@
     {
       "arguments": {
               "x-queue-type":"quorum",
-              "x-message-ttl":10000,
-              "x-max-length-bytes":10,
+              "x-message-ttl":500,
+              "x-max-length":10,
               "x-delivery-limit":3,
               "x-dead-letter-exchange":"dlx",
               "x-dead-letter-routing-key": "dlq"
